@@ -1,0 +1,62 @@
+// Copyright (c) 2020-2024 The Decred developers
+// Use of this source code is governed by an ISC
+// license that can be found in the LICENSE file.
+
+package webapi
+
+import (
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/monetarium/monetarium-vsp/database"
+	"github.com/monetarium/monetarium-vsp/types"
+)
+
+// ticketStatus is the handler for "POST /api/v3/ticketstatus".
+func (w *WebAPI) ticketStatus(c *gin.Context) {
+	const funcName = "ticketStatus"
+
+	// Get values which have been added to context by middleware.
+	ticket := c.MustGet(ticketKey).(database.Ticket)
+	knownTicket := c.MustGet(knownTicketKey).(bool)
+	reqBytes := c.MustGet(requestBytesKey).([]byte)
+
+	if !knownTicket {
+		w.log.Warnf("%s: Unknown ticket (clientIP=%s)", funcName, c.ClientIP())
+		w.sendError(types.ErrUnknownTicket, c)
+		return
+	}
+
+	var request types.TicketStatusRequest
+	if err := binding.JSON.BindBody(reqBytes, &request); err != nil {
+		w.log.Warnf("%s: Bad request (clientIP=%s): %v", funcName, c.ClientIP(), err)
+		w.sendErrorWithMsg(err.Error(), types.ErrBadRequest, c)
+		return
+	}
+
+	// Get altSignAddress from database
+	altSignAddrData, err := w.db.AltSignAddrData(ticket.Hash)
+	if err != nil {
+		w.log.Errorf("%s: db.AltSignAddrData error (ticketHash=%s): %v", funcName, ticket.Hash, err)
+		w.sendError(types.ErrInternalError, c)
+		return
+	}
+
+	altSignAddr := ""
+	if altSignAddrData != nil {
+		altSignAddr = altSignAddrData.AltSignAddr
+	}
+
+	w.sendJSONResponse(types.TicketStatusResponse{
+		Timestamp:       time.Now().Unix(),
+		Request:         reqBytes,
+		TicketConfirmed: ticket.Confirmed,
+		FeeTxStatus:     string(ticket.FeeTxStatus),
+		FeeTxHash:       ticket.FeeTxHash,
+		AltSignAddress:  altSignAddr,
+		VoteChoices:     ticket.VoteChoices,
+		TreasuryPolicy:  ticket.TreasuryPolicy,
+		TSpendPolicy:    ticket.TSpendPolicy,
+	}, c)
+}

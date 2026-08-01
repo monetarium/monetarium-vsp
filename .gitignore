@@ -1,0 +1,31 @@
+# Executables built by this repo.
+/cmd/vspd/vspd.exe
+/cmd/vspd/vspd
+/vspd.exe
+/vspd
+
+/cmd/vote-validator/vote-validator.exe
+/cmd/vote-validator/vote-validator
+/vote-validator.exe
+/vote-validator
+
+/cmd/v3tool/v3tool.exe
+/cmd/v3tool/v3tool
+/v3tool.exe
+/v3tool
+
+vote-validator.log
+
+# Harness dir.
+vspd-harness/
+
+# Testing, profiling, and benchmarking artifacts
+cov.out
+*cpu.out
+*mem.out
+internal/webapi/test.db
+database/test.db
+
+# Go workspace
+go.work
+go.work.sum

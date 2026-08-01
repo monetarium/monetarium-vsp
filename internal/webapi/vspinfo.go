@@ -1,0 +1,37 @@
+// Copyright (c) 2020-2024 The Decred developers
+// Use of this source code is governed by an ISC
+// license that can be found in the LICENSE file.
+
+package webapi
+
+import (
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/monetarium/monetarium-vsp/internal/version"
+	"github.com/monetarium/monetarium-vsp/types"
+)
+
+// vspInfo is the handler for "GET /api/v3/vspinfo".
+func (w *WebAPI) vspInfo(c *gin.Context) {
+	cachedStats := c.MustGet(cacheKey).(cacheData)
+
+	w.sendJSONResponse(types.VspInfoResponse{
+		APIVersions:         []int64{3},
+		Timestamp:           time.Now().Unix(),
+		PubKey:              w.signPubKey,
+		FeePercentage:       w.cfg.VSPFee,
+		Network:             w.cfg.Network.Name,
+		VspClosed:           w.cfg.VspClosed,
+		VspClosedMsg:        w.cfg.VspClosedMsg,
+		VspdVersion:         version.String(),
+		Voting:              cachedStats.Voting,
+		Voted:               cachedStats.Voted,
+		TotalVotingWallets:  cachedStats.TotalVotingWallets,
+		VotingWalletsOnline: cachedStats.VotingWalletsOnline,
+		Expired:             cachedStats.Expired,
+		Missed:              cachedStats.Missed,
+		BlockHeight:         cachedStats.BlockHeight,
+		NetworkProportion:   cachedStats.NetworkProportion,
+	}, c)
+}
