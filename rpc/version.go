@@ -12,11 +12,17 @@ import (
 
 // minimumVersions contains the minimum expected binary and API versions for
 // dcrd and dcrwallet.
+// The monetarium forks report their own version-map keys (verified against
+// live daemons): monetarium-node returns "monetarium"/"monetariumjsonrpcapi"
+// (binary 2.1.x, dcrd-2.1 era; JSON-RPC API 8.3), monetarium-wallet returns
+// "monw"/"monwjsonrpcapi" (binary 1.3.x fork versioning; JSON-RPC API 10.0 —
+// one major behind the dcrwallet 2.x API 11 upstream vspd expects, so any
+// API-11-only method use surfaces at runtime, not here).
 var minimumVersions = map[string]semver{
-	"dcrd":                {Major: 2, Minor: 1},
-	"dcrdjsonrpcapi":      {Major: 8, Minor: 3},
-	"dcrwallet":           {Major: 2, Minor: 1},
-	"dcrwalletjsonrpcapi": {Major: 11, Minor: 0},
+	"monetarium":           {Major: 2, Minor: 1},
+	"monetariumjsonrpcapi": {Major: 8, Minor: 3},
+	"monw":                 {Major: 1, Minor: 3},
+	"monwjsonrpcapi":       {Major: 10, Minor: 0},
 }
 
 // checkVersion returns an error if the provided key in verMap does not have

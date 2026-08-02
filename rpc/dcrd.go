@@ -137,8 +137,8 @@ func (c *DcrdRPC) checkVersion() error {
 	}
 
 	return errors.Join(
-		checkVersion(verMap, "dcrd"),
-		checkVersion(verMap, "dcrdjsonrpcapi"),
+		checkVersion(verMap, "monetarium"),
+		checkVersion(verMap, "monetariumjsonrpcapi"),
 	)
 }
 

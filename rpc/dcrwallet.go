@@ -145,10 +145,10 @@ func (c *WalletRPC) checkVersions() error {
 	// Presence of dcrd and dcrdjsonrpcapi in this map confirms dcrwallet is not
 	// running in SPV mode.
 	return errors.Join(
-		checkVersion(verMap, "dcrd"),
-		checkVersion(verMap, "dcrdjsonrpcapi"),
-		checkVersion(verMap, "dcrwallet"),
-		checkVersion(verMap, "dcrwalletjsonrpcapi"),
+		checkVersion(verMap, "monetarium"),
+		checkVersion(verMap, "monetariumjsonrpcapi"),
+		checkVersion(verMap, "monw"),
+		checkVersion(verMap, "monwjsonrpcapi"),
 	)
 }
 

@@ -35,16 +35,23 @@ funds are ever sent to these wallets.
 Each wallet is a separate process with its own data directory and port:
 
 ```bash
-monetarium-wallet --testnet --enablevoting --nogrpc \
+monetarium-wallet --testnet --enablevoting --manualtickets --nogrpc \
   --appdata=~/.mvsp-wallet-1 \
   --username=<user> --password=<pass> \
+  --pass=<passphrase> \
   --rpcconnect=127.0.0.1:19509 \
+  --cafile=<path to the node's rpc.cert> \
   --rpclisten=127.0.0.1:19510
 # second instance: --appdata=~/.mvsp-wallet-2 --rpclisten=127.0.0.1:19520
 ```
 
-The wallets must be unlocked (passphrase via a private config file or
-prompt) — they cannot vote otherwise.
+Mandatory flags (verified against a live run):
+- `--manualtickets` — vspd refuses to work with a wallet that lacks it
+  (the wallet must vote ONLY tickets added by the VSP);
+- `--pass=<passphrase>` — the first start needs the passphrase for
+  account discovery, and without the flag the daemon silently blocks on
+  a hidden stdin prompt; the same flag keeps the wallet unlocked for
+  voting (store the passphrase in a private config file, mode 0600).
 
 ## 3. Fee key (xpub)
 
