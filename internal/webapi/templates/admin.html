@@ -78,7 +78,7 @@
                             <h1>Local dcrd</h1>
 
                             <div class="vsp-table-scroll">
-                            <table>
+                                <table>
                                 <thead>
                                     <th>URL</th>
                                     <th>Height</th>
@@ -120,7 +120,7 @@
                             <h1>Voting Wallets</h1>
 
                             <div class="vsp-table-scroll">
-                            <table>
+                                <table>
                                 <thead>
                                     <th>URL</th>
                                     <th>Height</th>
@@ -226,7 +226,8 @@
                         <div class="p-2">
                             <h1>{{ pluralize (len .MissedTickets) "Missed Ticket" }}</h1>
                             {{ with .MissedTickets }}
-                            <table class="mx-auto">
+                            <div class="vsp-table-scroll">
+                                <table class="mx-auto">
                                 <thead>
                                     <th>Purchase Height</th>
                                     <th>Ticket Hash</th>
@@ -257,7 +258,8 @@
 
                         <div class="p-2">
                             <h1>Current X Pub</h1>
-                            <table class="mx-auto">
+                            <div class="vsp-table-scroll">
+                                <table class="mx-auto">
                                 <thead>
                                     <th>ID</th>
                                     <th>Key</th>
@@ -277,7 +279,8 @@
                         {{ with .OldXPubs }}
                         <div class="p-2">
                             <h1>Old X Pubs</h1>
-                            <table class="mx-auto">
+                            <div class="vsp-table-scroll">
+                                <table class="mx-auto">
                                 <thead>
                                     <th>ID</th>
                                     <th>Key</th>

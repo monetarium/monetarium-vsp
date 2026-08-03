@@ -7,7 +7,7 @@
         <h1>Ticket</h1>
 
         <div class="vsp-table-scroll">
-        <table>
+            <table>
             <tr>
                 <th>Hash</th>
                 <td>
@@ -49,7 +49,7 @@
         <h1>Fee</h1>
 
         <div class="vsp-table-scroll">
-        <table>
+            <table>
             <tr>
                 <th>Fee Address</th>
                 <td>
@@ -104,7 +104,7 @@
         <h1>Vote Choices</h1>
         
         <div class="vsp-table-scroll">
-        <table>
+            <table>
             <tr>
                 <th>Consensus Vote Choices</th>
                 <td>
@@ -144,7 +144,8 @@
                                 Change {{ $key }}
                             {{ end }}
                         </summary>
-                        <table class="my-2">
+                        <div class="vsp-table-scroll">
+                            <table class="my-2">
                             <tr>
                                 <th>Request</th>
                                 <td><pre>{{ indentJSON $value.Request }}</pre></td>
@@ -173,7 +174,7 @@
         <h1>Alternate Signing Address</h1>
         
         <div class="vsp-table-scroll">
-        <table>
+            <table>
             <tr>
                 <th>Alternate Signing Address</th>
                 <td>
@@ -191,7 +192,8 @@
                 <td>
                     {{if .AltSignAddrData}}
                     <details>
-                        <table class="my-2">
+                        <div class="vsp-table-scroll">
+                            <table class="my-2">
                             <tr>
                                 <th>Request</th>
                                 <td><pre>{{ indentJSON .AltSignAddrData.Req }}</pre></td>
