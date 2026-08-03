@@ -212,6 +212,8 @@ func (w *WebAPI) router(cookieSecret []byte, dcrd rpc.DcrdConnect, wallets rpc.W
 		"dateTime":         dateTime,
 		"timeAgo":          timeAgo,
 		"stripWss":         stripWss,
+		"supportURL":       supportURL,
+		"supportLabel":     supportLabel,
 		"indentJSON":       indentJSON(w.log),
 		"atomsToDCR":       atomsToDCR,
 		"float32ToPercent": float32ToPercent,

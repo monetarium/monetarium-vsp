@@ -5,7 +5,11 @@ html {
 
 body {
     background-color: #F3F5F6;
-    width: 100vw;
+    /* 100vw counts the vertical scrollbar, so on a scrolling page the body is
+       wider than the viewport and the layout drifts sideways — masked here
+       only by the overflow-x:hidden above, which would also hide real
+       overflow. 100% is the width actually available. */
+    width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -222,6 +226,27 @@ body {
     display: flex;
 }
 
+/*
+    Table scrolling
+
+    The admin and ticket-search tables carry up to six columns of hashes and
+    statuses — far wider than a phone. Without a scroll container the table
+    pushes the whole page sideways, so the header, the tab strip and the
+    footer all drift out of view and columns end up unreachable. Scrolling the
+    table alone keeps every column reachable on a phone exactly as on a
+    desktop, which is the point: same data, same tabs, same order — only the
+    table itself pans.
+*/
+.vsp-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.vsp-table-scroll > table {
+    min-width: 100%;
+}
+
 .vsp-tabset table td ,
 .vsp-tabset table th {
     padding: 10px 16px;
@@ -341,4 +366,51 @@ body {
     border: 1px solid #edeff1;
     vertical-align: middle;
     text-align: center;
+}
+
+/*
+    Small screens
+
+    The goal is parity, not a reduced phone edition: every tab, every column
+    and every control that exists on a desktop is present and reachable here.
+    Only the geometry changes — the tab strip wraps instead of overflowing,
+    side-by-side panels stack, and wide tables pan inside their own scroll
+    container (see .vsp-table-scroll).
+*/
+@media (max-width: 768px) {
+    /* Six tab labels do not fit one phone-width line. Wrapping keeps all six
+       visible and tappable; a horizontal scroll strip would hide the last of
+       them behind an affordance that is easy to miss. */
+    .vsp-tabset > ul {
+        flex-wrap: wrap;
+        margin-bottom: 15px;
+    }
+
+    .vsp-tabset > ul label {
+        padding: 8px 14px;
+    }
+
+    /* 30px side padding costs a sixth of a 375px screen. */
+    .vsp-tabset {
+        padding: 15px 12px;
+    }
+
+    /* The VSP status tab puts the node panel and the wallets panel in a row.
+       Two tables sharing 375px leaves neither readable, so they stack — same
+       panels, same order, one under the other. */
+    .vsp-status-tab {
+        flex-direction: column;
+    }
+
+    .vsp-status-tab > div,
+    .ticket-search-tab > div {
+        width: 100%;
+    }
+
+    /* Hashes and pubkeys are single unbreakable strings; without this they
+       set the page width and everything else drifts off-screen. */
+    .vsp-footer-left .code,
+    .vsp-tabset table td {
+        word-break: break-all;
+    }
 }

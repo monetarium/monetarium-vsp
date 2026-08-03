@@ -12,14 +12,14 @@
         <!-- fonts.css should be last to ensure dcr fonts take precedence. -->
         <link rel="stylesheet" href="/public/css/fonts.css?v={{ .WebApiCfg.VspdVersion }}" />
 
-        <!--  Monetarium favicon — same set the block explorer serves, so a
-              bookmarked VSP and a bookmarked explorer look like one project.  -->
-        <link rel="icon" href="/public/images/favicon/favicon.ico?v={{ .WebApiCfg.VspdVersion }}" sizes="48x48">
-        <link rel="icon" type="image/png" href="/public/images/favicon/favicon-96x96.png?v={{ .WebApiCfg.VspdVersion }}" sizes="96x96">
+        <!--  Monetarium favicon — the set monetarium.world serves, so the VSP
+              sits in the browser under the same mark as the project site.
+              favicon.svg is theme-adaptive there and stays that way here.  -->
+        <link rel="icon" href="/public/images/favicon/favicon.ico?v={{ .WebApiCfg.VspdVersion }}" sizes="32x32">
         <link rel="icon" type="image/svg+xml" href="/public/images/favicon/favicon.svg?v={{ .WebApiCfg.VspdVersion }}">
-        <link rel="apple-touch-icon" sizes="180x180" href="/public/images/favicon/apple-touch-icon.png?v={{ .WebApiCfg.VspdVersion }}">
+        <link rel="apple-touch-icon" href="/public/images/favicon/apple-touch-icon.png?v={{ .WebApiCfg.VspdVersion }}">
         <link rel="manifest" href="/public/images/favicon/site.webmanifest?v={{ .WebApiCfg.VspdVersion }}">
-        <meta name="theme-color" content="#ffffff">
+        <meta name="theme-color" content="#0b0b0c">
     </head>
     
     <body>
@@ -29,7 +29,7 @@
                 <div class="container">
                     <a class="text-decoration-none py-1 border-0 d-flex justify-content-start align-items-center" href="/">
                         <div class="vsp-logo-logo">
-                            <img src="/public/images/favicon/favicon.svg?v={{ .WebApiCfg.VspdVersion }}"
+                            <img src="/public/images/logo.svg?v={{ .WebApiCfg.VspdVersion }}"
                                  width="38" height="38" alt="Monetarium">
                         </div>
                         <div class="vsp-logo-text">

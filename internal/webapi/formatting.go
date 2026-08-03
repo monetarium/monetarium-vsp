@@ -16,6 +16,30 @@ import (
 	"github.com/monetarium/monetarium-node/dcrutil"
 )
 
+// supportURL turns the configured support contact into something a browser can
+// follow. Upstream assumed an email address and hardcoded a mailto: prefix in
+// the template; Monetarium's published contact channels are a Telegram group
+// and GitHub, so the value may just as well be a URL. An address gets mailto:,
+// anything already carrying a scheme is used as-is.
+func supportURL(contact string) string {
+	switch {
+	case strings.Contains(contact, "://"):
+		return contact
+	case strings.Contains(contact, "@"):
+		return "mailto:" + contact
+	default:
+		return contact
+	}
+}
+
+// supportLabel is what the support link reads as: a bare address or, for a URL,
+// its host and path without the scheme — "t.me/monetarium_world" rather than
+// the full "https://t.me/monetarium_world".
+func supportLabel(contact string) string {
+	trimmed := strings.TrimPrefix(strings.TrimPrefix(contact, "https://"), "http://")
+	return strings.TrimSuffix(trimmed, "/")
+}
+
 func addressURL(blockExplorerURL string) func(string) string {
 	return func(addr string) string {
 		return fmt.Sprintf("%s/address/%s", blockExplorerURL, addr)

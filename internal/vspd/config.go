@@ -44,7 +44,7 @@ type Config struct {
 	WalletPasswords string        `long:"walletpass" ini-name:"walletpass" description:"Comma separated list of password for dcrwallet RPC connections."`
 	WalletCerts     string        `long:"walletcert" ini-name:"walletcert" description:"Comma separated list of dcrwallet RPC certificate files."`
 	WebServerDebug  bool          `long:"webserverdebug" ini-name:"webserverdebug" description:"Enable web server debug mode (verbose logging to terminal and live-reloading templates)."`
-	SupportEmail    string        `long:"supportemail" ini-name:"supportemail" description:"Email address for users in need of support."`
+	SupportEmail    string        `long:"supportemail" ini-name:"supportemail" description:"Support contact shown in the page footer. An email address is linked as mailto:, a URL (e.g. a Telegram group) is linked as-is."`
 	BackupInterval  time.Duration `long:"backupinterval" ini-name:"backupinterval" description:"Time period between automatic database backups. Valid time units are {s,m,h}. Minimum 30 seconds."`
 	VspClosed       bool          `long:"vspclosed" ini-name:"vspclosed" description:"Closed prevents the VSP from accepting new tickets."`
 	VspClosedMsg    string        `long:"vspclosedmsg" ini-name:"vspclosedmsg" description:"A short message displayed on the webpage and returned by the status API endpoint if vspclosed is true."`

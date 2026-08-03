@@ -13,7 +13,7 @@
             <p class="py-4 m-0">
               <strong>Stats&nbsp;updated:</strong>&nbsp;{{ timeAgo .WebApiCache.UpdateTime }}
               <br />
-              <strong>Support:</strong>&nbsp;<a href="mailto:{{ .WebApiCfg.SupportEmail }}" rel="noopener noreferrer">{{ .WebApiCfg.SupportEmail }}</a>
+              <strong>Support:</strong>&nbsp;<a href="{{ supportURL .WebApiCfg.SupportEmail }}" target="_blank" rel="noopener noreferrer">{{ supportLabel .WebApiCfg.SupportEmail }}</a>
               <br />
               <strong>VSP&nbsp;public&nbsp;key:</strong>&nbsp;<span class="code text-break">{{ .WebApiCache.PubKey }}</span>
             </p>
@@ -23,9 +23,11 @@
         <div class="vsp-footer-right col-md-4 col-12 justify-content-center justify-content-md-end">
           <div class="d-block text-center text-md-right">
             <p class="py-4 m-0">
-              Monetarium | 2026
+              &copy; 2026 Monetarium
               <br />
-              The source code is available on <a href="https://github.com/monetarium/monetarium-vsp" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href="https://monetarium.world" target="_blank" rel="noopener noreferrer">monetarium.world</a>
+              &nbsp;·&nbsp;
+              <a href="https://github.com/monetarium/monetarium-vsp" target="_blank" rel="noopener noreferrer">GitHub</a>
               <br />
               Based on <a href="https://github.com/decred/vspd" target="_blank" rel="noopener noreferrer">decred/vspd</a> &copy; Decred developers, ISC
             </p>

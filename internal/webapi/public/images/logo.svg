@@ -5,14 +5,9 @@
   aria-label="Monetarium"
 >
   <title>Monetarium</title>
-  <!-- Theme-adaptive ink: matches the browser chrome (light/dark). Colors mirror
-       the text-primary primitive in src/styles/themes.css. -->
-  <style>
-    svg { color: #15151a; }
-    @media (prefers-color-scheme: dark) {
-      svg { color: #f4f3f0; }
-    }
-  </style>
+  <!-- Navbar mark: fixed light-theme ink. The favicon keeps the site's
+       theme-adaptive version; this one sits on an always-light bar. -->
+  <style>svg { color: #15151a; }</style>
   <g fill="currentColor">
   <path
     aria-label="MONETARIUM" 

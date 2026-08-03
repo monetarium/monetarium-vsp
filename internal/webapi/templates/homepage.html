@@ -27,11 +27,13 @@
 
         <h1>VSP Overview</h1>
 
-        <p class="pt-1 pb-2">A Voting Service Provider (VSP) maintains a pool of always-online voting wallets,
-            and allows Monetarium (VAR) ticket holders to use these wallets to vote their tickets in exchange for a small fee.
-            VSPs are completely non-custodial - they never hold, manage, or have access to any user funds.
+        <p class="pt-1 pb-2">A Voting Service Provider is a non-custodial service that lets you stake without
+            needing to keep your wallet online. It maintains a pool of always-online voting wallets which vote
+            your Varta (VAR) tickets on your behalf, in exchange for a small fee. The service never holds,
+            manages, or has access to any user funds.
             Visit <a href="https://monetarium.world" target="_blank" rel="noopener noreferrer">monetarium.world</a>
-            to find out more about VSPs, tickets, and voting.
+            to find out more about Monetarium, or browse tickets and votes in the
+            <a href="{{ .WebApiCfg.Network.BlockExplorerURL }}" target="_blank" rel="noopener noreferrer">block explorer</a>.
         </p>
 
         {{ template "vsp-stats" . }}

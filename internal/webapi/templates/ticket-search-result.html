@@ -6,6 +6,7 @@
 
         <h1>Ticket</h1>
 
+        <div class="vsp-table-scroll">
         <table>
             <tr>
                 <th>Hash</th>
@@ -43,9 +44,11 @@
                 </td>
             </tr>
         </table>
+        </div>
 
         <h1>Fee</h1>
 
+        <div class="vsp-table-scroll">
         <table>
             <tr>
                 <th>Fee Address</th>
@@ -96,9 +99,11 @@
                 <td>{{ .Ticket.FeeTxStatus }}</td>
             </tr>
         </table>
+        </div>
 
         <h1>Vote Choices</h1>
         
+        <div class="vsp-table-scroll">
         <table>
             <tr>
                 <th>Consensus Vote Choices</th>
@@ -157,14 +162,17 @@
                                 <td>{{ $value.ResponseSignature }}</td>
                             </tr>
                         </table>
+                        </div>
                     </details>
                     {{end}}
                 </td>
             </tr>
         </table>
+        </div>
 
         <h1>Alternate Signing Address</h1>
         
+        <div class="vsp-table-scroll">
         <table>
             <tr>
                 <th>Alternate Signing Address</th>
@@ -201,11 +209,13 @@
                                 <td>{{ .AltSignAddrData.RespSig }}</td>
                             </tr>
                         </table>
+                        </div>
                     </details>
                     {{end}}
                 </td>
             </tr>
         </table>
+        </div>
 
     {{ else }}
         <p class="vsp-text-orange">No ticket found with hash <span class="code">{{ .Hash }}</span></p>
