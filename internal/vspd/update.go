@@ -288,6 +288,21 @@ func (v *Vspd) setOutcomes(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 		// not performed a scan for spent tickets since it started. This will
 		// catch any tickets which were spent whilst vspd was offline.
 		startHeight = votableTickets.EarliestPurchaseHeight() + int64(v.network.TicketMaturity)
+
+		// That maturity height is in the future when every votable ticket was
+		// bought within the last TicketMaturity blocks — the normal state of a
+		// new VSP, or of any VSP right after its first ticket of the day. None
+		// of those tickets can have been spent yet, so there is nothing to
+		// scan; findSpentTickets would reject the range and log an error on
+		// every block until the chain caught up.
+		bestBlock, err := dcrdClient.GetBlockCount()
+		if err != nil {
+			v.log.Errorf("%s: dcrd.GetBlockCount error: %v", funcName, err)
+			return
+		}
+		if startHeight > bestBlock {
+			return
+		}
 	} else {
 		startHeight = v.lastScannedBlock
 	}
