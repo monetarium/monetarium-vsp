@@ -19,7 +19,7 @@ type VspInfoResponse struct {
 	VspClosed           bool    `json:"vspclosed"`
 	VspClosedMsg        string  `json:"vspclosedmsg"`
 	Network             string  `json:"network"`
-	VspdVersion         string  `json:"vspdversion"`
+	VspmVersion         string  `json:"vspdversion"`
 	Voting              int64   `json:"voting"`
 	Voted               int64   `json:"voted"`
 	TotalVotingWallets  int64   `json:"totalvotingwallets"`

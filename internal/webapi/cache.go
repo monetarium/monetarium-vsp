@@ -25,7 +25,7 @@ type cache struct {
 
 	log     slog.Logger
 	db      *database.VspDatabase
-	dcrd    rpc.DcrdConnect
+	mond    rpc.MondConnect
 	wallets rpc.WalletConnect
 }
 
@@ -65,14 +65,14 @@ func (c *cache) getData() cacheData {
 
 // newCache creates a new cache and initializes it with static values.
 func newCache(signPubKey string, log slog.Logger, db *database.VspDatabase,
-	dcrd rpc.DcrdConnect, wallets rpc.WalletConnect) *cache {
+	mond rpc.MondConnect, wallets rpc.WalletConnect) *cache {
 	return &cache{
 		data: cacheData{
 			PubKey: signPubKey,
 		},
 		log:     log,
 		db:      db,
-		dcrd:    dcrd,
+		mond:    mond,
 		wallets: wallets,
 	}
 }
@@ -92,12 +92,12 @@ func (c *cache) update() error {
 	}
 
 	// Get latest best block height.
-	dcrdClient, _, err := c.dcrd.Client()
+	mondClient, _, err := c.mond.Client()
 	if err != nil {
 		return err
 	}
 
-	bestBlock, err := dcrdClient.GetBestBlockHeader()
+	bestBlock, err := mondClient.GetBestBlockHeader()
 	if err != nil {
 		return err
 	}

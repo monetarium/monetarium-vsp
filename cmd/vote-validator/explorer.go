@@ -12,7 +12,7 @@ import (
 	"io"
 	"net/http"
 
-	dcrdtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
+	mondtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
 )
 
 type txns struct {
@@ -28,7 +28,7 @@ type vout struct {
 	Value               float64                      `json:"value"`
 	N                   uint32                       `json:"n"`
 	Version             uint16                       `json:"version"`
-	ScriptPubKeyDecoded dcrdtypes.ScriptPubKeyResult `json:"scriptPubKey"`
+	ScriptPubKeyDecoded mondtypes.ScriptPubKeyResult `json:"scriptPubKey"`
 	Spend               *txInputID                   `json:"spend"`
 }
 
@@ -38,16 +38,16 @@ type tx struct {
 	Version       int32           `json:"version"`
 	Locktime      uint32          `json:"locktime"`
 	Expiry        uint32          `json:"expiry"`
-	Vin           []dcrdtypes.Vin `json:"vin"`
+	Vin           []mondtypes.Vin `json:"vin"`
 	Vout          []vout          `json:"vout"`
 	Confirmations int64           `json:"confirmations"`
 }
 
-type dcrdataClient struct {
+type mondataClient struct {
 	URL string
 }
 
-func (d *dcrdataClient) txns(ctx context.Context, txnHashes []string, spends bool) ([]tx, error) {
+func (d *mondataClient) txns(ctx context.Context, txnHashes []string, spends bool) ([]tx, error) {
 	jsonData, err := json.Marshal(txns{
 		Transactions: txnHashes,
 	})
@@ -70,7 +70,7 @@ func (d *dcrdataClient) txns(ctx context.Context, txnHashes []string, spends boo
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("dcrdata response: %v", resp.Status)
+		return nil, fmt.Errorf("mondata response: %v", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)

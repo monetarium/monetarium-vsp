@@ -17,7 +17,7 @@ import (
 	"github.com/monetarium/monetarium-vsp/internal/config"
 	"github.com/monetarium/monetarium-vsp/internal/signal"
 	"github.com/monetarium/monetarium-vsp/internal/version"
-	"github.com/monetarium/monetarium-vsp/internal/vspd"
+	"github.com/monetarium/monetarium-vsp/internal/vspm"
 	"github.com/monetarium/monetarium-vsp/internal/webapi"
 	"github.com/monetarium/monetarium-vsp/rpc"
 )
@@ -34,11 +34,11 @@ func main() {
 	os.Exit(run())
 }
 
-// initLogging uses the provided vspd config to create a logging backend, and
+// initLogging uses the provided vspm config to create a logging backend, and
 // returns a function which can be used to create ready-to-use subsystem
 // loggers.
-func initLogging(cfg *vspd.Config) (func(subsystem string) slog.Logger, error) {
-	backend, err := newLogBackend(cfg.LogDir(), "vspd", cfg.MaxLogSize, cfg.LogsToKeep)
+func initLogging(cfg *vspm.Config) (func(subsystem string) slog.Logger, error) {
+	backend, err := newLogBackend(cfg.LogDir(), "vspm", cfg.MaxLogSize, cfg.LogsToKeep)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize logger: %w", err)
 	}
@@ -56,11 +56,11 @@ func initLogging(cfg *vspd.Config) (func(subsystem string) slog.Logger, error) {
 	}, nil
 }
 
-// run is the real main function for vspd. It is necessary to work around the
+// run is the real main function for vspm. It is necessary to work around the
 // fact that deferred functions do not run when os.Exit() is called.
 func run() int {
 	// Load config file and parse CLI args.
-	cfg, err := vspd.LoadConfig()
+	cfg, err := vspm.LoadConfig()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "loadConfig error: %v\n", err)
 		return 1
@@ -86,13 +86,13 @@ func run() int {
 
 	if network == &config.MainNet && version.IsPreRelease() {
 		log.Warnf("")
-		log.Warnf("\tWARNING: This is a pre-release version of vspd which should not be used on mainnet")
+		log.Warnf("\tWARNING: This is a pre-release version of vspm which should not be used on mainnet")
 		log.Warnf("")
 	}
 
 	if cfg.VspClosed {
 		log.Warnf("")
-		log.Warnf("\tWARNING: Config --vspclosed is set. This will prevent vspd from accepting new tickets")
+		log.Warnf("\tWARNING: Config --vspclosed is set. This will prevent vspm from accepting new tickets")
 		log.Warnf("")
 	}
 
@@ -104,7 +104,7 @@ func run() int {
 
 	if cfg.FeeXPub != "" {
 		log.Warnf("")
-		log.Warnf("\tWARNING: Config --feexpub is set. This behavior has been moved into vspadmin and will be removed from vspd in a future release")
+		log.Warnf("\tWARNING: Config --feexpub is set. This behavior has been moved into vspadmin and will be removed from vspm in a future release")
 		log.Warnf("")
 	}
 
@@ -119,17 +119,17 @@ func run() int {
 
 	rpcLog := makeLogger("RPC")
 
-	// Create a channel to receive blockConnected notifications from dcrd.
+	// Create a channel to receive blockConnected notifications from mond.
 	blockNotifChan := make(chan *wire.BlockHeader)
 
-	// Create RPC client for local dcrd instance (used for broadcasting and
+	// Create RPC client for local mond instance (used for broadcasting and
 	// checking the status of fee transactions).
-	dd := cfg.DcrdDetails()
-	dcrd := rpc.SetupDcrd(dd.User, dd.Password, dd.Host, dd.Cert, network.Params, rpcLog, blockNotifChan)
+	dd := cfg.MondDetails()
+	mond := rpc.SetupMond(dd.User, dd.Password, dd.Host, dd.Cert, network.Params, rpcLog, blockNotifChan)
 
-	defer dcrd.Close()
+	defer mond.Close()
 
-	// Create RPC client for remote dcrwallet instances (used for voting).
+	// Create RPC client for remote monwallet instances (used for voting).
 	wd := cfg.WalletDetails()
 	wallets := rpc.SetupWallet(wd.Users, wd.Passwords, wd.Hosts, wd.Certs, network.Params, rpcLog)
 	defer wallets.Close()
@@ -146,9 +146,9 @@ func run() int {
 		Debug:                cfg.WebServerDebug,
 		Designation:          cfg.Designation,
 		MaxVoteChangeRecords: maxVoteChangeRecords,
-		VspdVersion:          version.String(),
+		VspmVersion:          version.String(),
 	}
-	api, err := webapi.New(db, makeLogger("API"), dcrd, wallets, apiCfg)
+	api, err := webapi.New(db, makeLogger("API"), mond, wallets, apiCfg)
 	if err != nil {
 		log.Errorf("Failed to initialize webapi: %v", err)
 		return 1
@@ -162,10 +162,10 @@ func run() int {
 		api.Run(ctx)
 	})
 
-	// Start vspd.
-	vspd := vspd.New(network, log, db, dcrd, wallets, blockNotifChan)
+	// Start vspm.
+	vspm := vspm.New(network, log, db, mond, wallets, blockNotifChan)
 	wg.Go(func() {
-		vspd.Run(ctx)
+		vspm.Run(ctx)
 	})
 
 	// Periodically write a database backup file.

@@ -2,7 +2,7 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.package main
 
-package vspd
+package vspm
 
 import (
 	"context"
@@ -65,12 +65,12 @@ func (s *spentTicket) missed() bool {
 // against the block filters of the mainchain blocks between the provided start
 // block and the current best block. Returns any found spent tickets and the
 // height of the most recent scanned block.
-func (v *Vspd) findSpentTickets(ctx context.Context, dcrdClient *rpc.DcrdRPC,
+func (v *Vspm) findSpentTickets(ctx context.Context, mondClient *rpc.MondRPC,
 	toCheck database.TicketList, startHeight int64) ([]spentTicket, int64, error) {
 
-	endHeight, err := dcrdClient.GetBlockCount()
+	endHeight, err := mondClient.GetBlockCount()
 	if err != nil {
-		return nil, 0, fmt.Errorf("dcrd.GetBlockCount error: %w", err)
+		return nil, 0, fmt.Errorf("mond.GetBlockCount error: %w", err)
 	}
 
 	if startHeight > endHeight {
@@ -120,18 +120,18 @@ func (v *Vspd) findSpentTickets(ctx context.Context, dcrdClient *rpc.DcrdRPC,
 			return nil, 0, context.Canceled
 		}
 
-		iHash, err := dcrdClient.GetBlockHash(iHeight)
+		iHash, err := mondClient.GetBlockHash(iHeight)
 		if err != nil {
 			return nil, 0, err
 		}
 
-		iHeader, err := dcrdClient.GetBlockHeader(iHash)
+		iHeader, err := mondClient.GetBlockHeader(iHash)
 		if err != nil {
 			return nil, 0, err
 		}
 
 		verifyProof := v.network.DCP5Active(iHeight)
-		key, filter, err := dcrdClient.GetCFilterV2(iHeader, verifyProof)
+		key, filter, err := mondClient.GetCFilterV2(iHeader, verifyProof)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -143,7 +143,7 @@ func (v *Vspd) findSpentTickets(ctx context.Context, dcrdClient *rpc.DcrdRPC,
 
 		// Filter match means a ticket is likely spent in this block. Get the
 		// full block to confirm.
-		iBlock, err := dcrdClient.GetBlock(iHash)
+		iBlock, err := mondClient.GetBlock(iHash)
 		if err != nil {
 			return nil, 0, err
 		}

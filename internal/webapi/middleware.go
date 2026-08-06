@@ -65,7 +65,7 @@ func rateLimit(limit rate.Limit, limitExceeded gin.HandlerFunc) gin.HandlerFunc 
 // maintain authentication status.
 func (w *WebAPI) withSession(store *sessions.CookieStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		session, err := store.Get(c.Request, "vspd-session")
+		session, err := store.Get(c.Request, "vspm-session")
 		if err != nil {
 			// "value is not valid" occurs if the cookie secret changes. This is
 			// common during development (eg. when using the test harness) but
@@ -114,7 +114,7 @@ func (w *WebAPI) requireWebCache(c *gin.Context) {
 // csrf provides protection against Cross-Site Request Forgery (CSRF) attacks.
 func (w *WebAPI) csrf() gin.HandlerFunc {
 	// The protection offered by http.CrossOriginProtection is not as robust as
-	// traditional token based solutions, however it is good enough for the vspd
+	// traditional token based solutions, however it is good enough for the vspm
 	// website which has no particularly sensitive form actions.
 	//
 	// Alex Edwards's blog has a good overview of the limitations:
@@ -148,16 +148,16 @@ func (w *WebAPI) requireAdmin(c *gin.Context) {
 	}
 }
 
-// withDcrdClient middleware adds a dcrd client to the request context for
+// withMondClient middleware adds a mond client to the request context for
 // downstream handlers to make use of.
-func (w *WebAPI) withDcrdClient(dcrd rpc.DcrdConnect) gin.HandlerFunc {
+func (w *WebAPI) withMondClient(mond rpc.MondConnect) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		client, hostname, err := dcrd.Client()
+		client, hostname, err := mond.Client()
 		// Don't handle the error here, add it to the context and let downstream
 		// handlers decide what to do with it.
-		c.Set(dcrdKey, client)
-		c.Set(dcrdHostKey, hostname)
-		c.Set(dcrdErrorKey, err)
+		c.Set(mondKey, client)
+		c.Set(mondHostKey, hostname)
+		c.Set(mondErrorKey, err)
 	}
 }
 
@@ -199,10 +199,10 @@ func (w *WebAPI) vspMustBeOpen(c *gin.Context) {
 	}
 }
 
-// broadcastTicket will ensure that the local dcrd instance is aware of the
+// broadcastTicket will ensure that the local mond instance is aware of the
 // provided ticket.
 // Ticket hash, ticket hex, and parent hex are parsed from the request body and
-// validated. They are broadcast to the network using SendRawTransaction if dcrd
+// validated. They are broadcast to the network using SendRawTransaction if mond
 // is not aware of them.
 func (w *WebAPI) broadcastTicket() gin.HandlerFunc {
 	// broadcastSem limits the number of concurrent transaction broadcasts.
@@ -265,27 +265,27 @@ func (w *WebAPI) broadcastTicket() gin.HandlerFunc {
 		}
 		parentHash := parentTx.TxHash()
 
-		// Check if local dcrd already knows the parent tx.
-		dcrdClient := c.MustGet(dcrdKey).(*rpc.DcrdRPC)
-		dcrdErr := c.MustGet(dcrdErrorKey)
-		if dcrdErr != nil {
-			w.log.Errorf("%s: %v", funcName, dcrdErr.(error))
+		// Check if local mond already knows the parent tx.
+		mondClient := c.MustGet(mondKey).(*rpc.MondRPC)
+		mondErr := c.MustGet(mondErrorKey)
+		if mondErr != nil {
+			w.log.Errorf("%s: %v", funcName, mondErr.(error))
 			w.sendError(types.ErrInternalError, c)
 			return
 		}
 
-		_, err = dcrdClient.GetRawTransaction(parentHash.String())
+		_, err = mondClient.GetRawTransaction(parentHash.String())
 		if err != nil {
 			// Return error to the client if the error is not ErrNoTxInfo.
 			var e *wsrpc.Error
 			if !errors.As(err, &e) || e.Code != rpc.ErrNoTxInfo {
-				w.log.Errorf("%s: dcrd.GetRawTransaction for ticket parent failed (ticketHash=%s): %v",
+				w.log.Errorf("%s: mond.GetRawTransaction for ticket parent failed (ticketHash=%s): %v",
 					funcName, request.TicketHash, err)
 				w.sendError(types.ErrInternalError, c)
 				return
 			}
 
-			// ErrNoTxInfo means local dcrd is not aware of the parent. We have
+			// ErrNoTxInfo means local mond is not aware of the parent. We have
 			// the hex, so we can broadcast it here.
 
 			// Before broadcasting, check that the provided parent hex is
@@ -306,13 +306,13 @@ func (w *WebAPI) broadcastTicket() gin.HandlerFunc {
 			}
 
 			w.log.Debugf("%s: Broadcasting parent tx %s (ticketHash=%s)", funcName, parentHash, request.TicketHash)
-			err = dcrdClient.SendRawTransaction(request.ParentHex)
+			err = mondClient.SendRawTransaction(request.ParentHex)
 			if err != nil {
 				// Unknown output errors have special handling because they
 				// could be resolved by waiting for network propagation. Any
 				// other errors are returned to client immediately.
 				if !rpc.ErrOrphan.MatchString(err.Error()) {
-					w.log.Errorf("%s: dcrd.SendRawTransaction for parent tx failed (ticketHash=%s): %v",
+					w.log.Errorf("%s: mond.SendRawTransaction for parent tx failed (ticketHash=%s): %v",
 						funcName, request.TicketHash, err)
 					w.sendError(types.ErrCannotBroadcastTicket, c)
 					return
@@ -338,7 +338,7 @@ func (w *WebAPI) broadcastTicket() gin.HandlerFunc {
 					// Wait for 1 second and try again, max 7 attempts.
 					for range 7 {
 						time.Sleep(1 * time.Second)
-						err := dcrdClient.SendRawTransaction(request.ParentHex)
+						err := mondClient.SendRawTransaction(request.ParentHex)
 						if err == nil {
 							return true
 						}
@@ -356,27 +356,27 @@ func (w *WebAPI) broadcastTicket() gin.HandlerFunc {
 
 		}
 
-		// Check if local dcrd already knows the ticket.
-		_, err = dcrdClient.GetRawTransaction(request.TicketHash)
+		// Check if local mond already knows the ticket.
+		_, err = mondClient.GetRawTransaction(request.TicketHash)
 		if err == nil {
-			// No error means dcrd already knows the ticket, we are done here.
+			// No error means mond already knows the ticket, we are done here.
 			return
 		}
 
-		// ErrNoTxInfo means local dcrd is not aware of the ticket. We have the
+		// ErrNoTxInfo means local mond is not aware of the ticket. We have the
 		// hex, so we can broadcast it here.
 		var e *wsrpc.Error
 		if errors.As(err, &e) && e.Code == rpc.ErrNoTxInfo {
 			w.log.Debugf("%s: Broadcasting ticket (ticketHash=%s)", funcName, request.TicketHash)
-			err = dcrdClient.SendRawTransaction(request.TicketHex)
+			err = mondClient.SendRawTransaction(request.TicketHex)
 			if err != nil {
-				w.log.Errorf("%s: dcrd.SendRawTransaction for ticket failed (ticketHash=%s): %v",
+				w.log.Errorf("%s: mond.SendRawTransaction for ticket failed (ticketHash=%s): %v",
 					funcName, request.TicketHash, err)
 				w.sendError(types.ErrCannotBroadcastTicket, c)
 				return
 			}
 		} else {
-			w.log.Errorf("%s: dcrd.GetRawTransaction for ticket failed (ticketHash=%s): %v",
+			w.log.Errorf("%s: mond.GetRawTransaction for ticket failed (ticketHash=%s): %v",
 				funcName, request.TicketHash, err)
 			w.sendError(types.ErrInternalError, c)
 			return
@@ -440,19 +440,19 @@ func (w *WebAPI) vspAuth(c *gin.Context) {
 		commitmentAddress = ticket.CommitmentAddress
 	} else {
 		// Otherwise the commitment address must be retrieved from the chain
-		// using dcrd.
-		dcrdClient := c.MustGet(dcrdKey).(*rpc.DcrdRPC)
-		dcrdErr := c.MustGet(dcrdErrorKey)
-		if dcrdErr != nil {
-			w.log.Errorf("%s: Could not get dcrd client (clientIP=%s, ticketHash=%s): %v",
-				funcName, c.ClientIP(), hash, dcrdErr.(error))
+		// using mond.
+		mondClient := c.MustGet(mondKey).(*rpc.MondRPC)
+		mondErr := c.MustGet(mondErrorKey)
+		if mondErr != nil {
+			w.log.Errorf("%s: Could not get mond client (clientIP=%s, ticketHash=%s): %v",
+				funcName, c.ClientIP(), hash, mondErr.(error))
 			w.sendError(types.ErrInternalError, c)
 			return
 		}
 
-		rawTx, err := dcrdClient.GetRawTransaction(hash)
+		rawTx, err := mondClient.GetRawTransaction(hash)
 		if err != nil {
-			w.log.Errorf("%s: dcrd.GetRawTransaction for ticket failed (clientIP=%s, ticketHash=%s): %v",
+			w.log.Errorf("%s: mond.GetRawTransaction for ticket failed (clientIP=%s, ticketHash=%s): %v",
 				funcName, c.ClientIP(), hash, err)
 			w.sendError(types.ErrInternalError, c)
 			return

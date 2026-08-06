@@ -7,16 +7,16 @@ package rpc
 import (
 	"fmt"
 
-	dcrdtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
+	mondtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
 )
 
 // minimumVersions contains the minimum expected binary and API versions for
-// dcrd and dcrwallet.
+// mond and monwallet.
 // The monetarium forks report their own version-map keys (verified against
 // live daemons): monetarium-node returns "monetarium"/"monetariumjsonrpcapi"
-// (binary 2.1.x, dcrd-2.1 era; JSON-RPC API 8.3), monetarium-wallet returns
+// (binary 2.1.x, mond-2.1 era; JSON-RPC API 8.3), monwallet returns
 // "monw"/"monwjsonrpcapi" (binary 1.3.x fork versioning; JSON-RPC API 10.0 —
-// one major behind the dcrwallet 2.x API 11 upstream vspd expects, so any
+// one major behind the monwallet 2.x API 11 upstream vspm expects, so any
 // API-11-only method use surfaces at runtime, not here).
 var minimumVersions = map[string]semver{
 	"monetarium":           {Major: 2, Minor: 1},
@@ -27,7 +27,7 @@ var minimumVersions = map[string]semver{
 
 // checkVersion returns an error if the provided key in verMap does not have
 // semver compatibility with the minimum expected versions.
-func checkVersion(verMap map[string]dcrdtypes.VersionResult, key string) error {
+func checkVersion(verMap map[string]mondtypes.VersionResult, key string) error {
 	var actualV semver
 	if ver, ok := verMap[key]; ok {
 		actualV = semver{ver.Major, ver.Minor, ver.Patch}

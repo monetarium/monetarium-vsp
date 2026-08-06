@@ -17,18 +17,18 @@ import (
 	"github.com/monetarium/monetarium-node/blockchain/stake"
 	"github.com/monetarium/monetarium-node/chaincfg"
 	"github.com/monetarium/monetarium-node/dcrutil"
-	dcrdtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
+	mondtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
 	"github.com/monetarium/monetarium-node/txscript/stdaddr"
 	"github.com/monetarium/monetarium-node/txscript/stdscript"
 	"github.com/monetarium/monetarium-node/wire"
 	wallettypes "github.com/monetarium/monetarium-wallet/rpc/jsonrpc/types"
 )
 
-type dcrwallet struct {
+type monwallet struct {
 	*wsrpc.Client
 }
 
-func newWalletRPC(ctx context.Context, rpcURL, rpcUser, rpcPass string) (*dcrwallet, error) {
+func newWalletRPC(ctx context.Context, rpcURL, rpcUser, rpcPass string) (*monwallet, error) {
 	tlsOpt := wsrpc.WithTLSConfig(&tls.Config{
 		InsecureSkipVerify: true,
 	})
@@ -37,10 +37,10 @@ func newWalletRPC(ctx context.Context, rpcURL, rpcUser, rpcPass string) (*dcrwal
 	if err != nil {
 		return nil, err
 	}
-	return &dcrwallet{rpc}, nil
+	return &monwallet{rpc}, nil
 }
 
-func (w *dcrwallet) createFeeTx(ctx context.Context, feeAddress string, fee int64) (string, error) {
+func (w *monwallet) createFeeTx(ctx context.Context, feeAddress string, fee int64) (string, error) {
 	amounts := make(map[string]float64)
 	amounts[feeAddress] = dcrutil.Amount(fee).ToCoin()
 
@@ -66,10 +66,10 @@ func (w *dcrwallet) createFeeTx(ctx context.Context, feeAddress string, fee int6
 		return "", err
 	}
 
-	transactions := make([]dcrdtypes.TransactionInput, 0)
+	transactions := make([]mondtypes.TransactionInput, 0)
 
 	for _, v := range tx.TxIn {
-		transactions = append(transactions, dcrdtypes.TransactionInput{
+		transactions = append(transactions, mondtypes.TransactionInput{
 			Txid: v.PreviousOutPoint.Hash.String(),
 			Vout: v.PreviousOutPoint.Index,
 		})
@@ -97,7 +97,7 @@ func (w *dcrwallet) createFeeTx(ctx context.Context, feeAddress string, fee int6
 	return signedTx.Hex, nil
 }
 
-func (w *dcrwallet) SignMessage(ctx context.Context, msg string, commitmentAddr stdaddr.Address) ([]byte, error) {
+func (w *monwallet) SignMessage(ctx context.Context, msg string, commitmentAddr stdaddr.Address) ([]byte, error) {
 	var signature string
 	err := w.Call(ctx, "signmessage", &signature, commitmentAddr.String(), msg)
 	if err != nil {
@@ -107,7 +107,7 @@ func (w *dcrwallet) SignMessage(ctx context.Context, msg string, commitmentAddr 
 	return base64.StdEncoding.DecodeString(signature)
 }
 
-func (w *dcrwallet) dumpPrivKey(ctx context.Context, addr stdaddr.Address) (string, error) {
+func (w *monwallet) dumpPrivKey(ctx context.Context, addr stdaddr.Address) (string, error) {
 	var privKeyStr string
 	err := w.Call(ctx, "dumpprivkey", &privKeyStr, addr.String())
 	if err != nil {
@@ -116,7 +116,7 @@ func (w *dcrwallet) dumpPrivKey(ctx context.Context, addr stdaddr.Address) (stri
 	return privKeyStr, nil
 }
 
-func (w *dcrwallet) getTickets(ctx context.Context) (*wallettypes.GetTicketsResult, error) {
+func (w *monwallet) getTickets(ctx context.Context) (*wallettypes.GetTicketsResult, error) {
 	var tickets wallettypes.GetTicketsResult
 	const includeImmature = true
 	err := w.Call(ctx, "gettickets", &tickets, includeImmature)
@@ -128,7 +128,7 @@ func (w *dcrwallet) getTickets(ctx context.Context) (*wallettypes.GetTicketsResu
 
 // getTicketDetails returns the ticket hex, privkey for voting, and the
 // commitment address.
-func (w *dcrwallet) getTicketDetails(ctx context.Context, ticketHash string) (string, string, stdaddr.Address, error) {
+func (w *monwallet) getTicketDetails(ctx context.Context, ticketHash string) (string, string, stdaddr.Address, error) {
 	var getTransactionResult wallettypes.GetTransactionResult
 	err := w.Call(ctx, "gettransaction", &getTransactionResult, ticketHash, false)
 	if err != nil {

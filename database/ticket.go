@@ -40,7 +40,7 @@ const (
 	Voted TicketOutcome = "voted"
 
 	// Revoked is a deprecated status which should no longer be used. It was
-	// used before vspd was able to distinguish between expired and missed
+	// used before vspm was able to distinguish between expired and missed
 	// tickets.
 	Revoked TicketOutcome = "revoked"
 )

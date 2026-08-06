@@ -11,8 +11,8 @@ vspadmin [OPTIONS] COMMAND
 ## Options
 
 ```no-highlight
---homedir=                         Path to application home directory. (default: /home/user/.vspd)
---network=[mainnet|testnet|simnet] Decred network to use. (default: mainnet)
+--homedir=                         Path to application home directory. (default: /home/user/.vspm)
+--network=[mainnet|testnet|simnet] Monetarium network to use. (default: mainnet)
 -h, --help                         Show help message
 ```
 
@@ -20,7 +20,7 @@ vspadmin [OPTIONS] COMMAND
 
 ### `createdatabase`
 
-Creates a new database for a new deployment of vspd. Accepts the xpub key to be
+Creates a new database for a new deployment of vspm. Accepts the xpub key to be
 used for collecting fees as a parameter.
 
 Example:
@@ -44,8 +44,8 @@ $ go run ./cmd/vspadmin writeconfig
 Replaces the currently used xpub with a new one. Once an xpub key has been
 retired it can not be used by the VSP again.
 
-**Note:** vspd must be stopped before this command can be used because it
-modifies values in the vspd database.
+**Note:** vspm must be stopped before this command can be used because it
+modifies values in the vspm database.
 
 Example:
 

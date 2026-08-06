@@ -26,10 +26,10 @@ func (w *WebAPI) payFee(c *gin.Context) {
 	// Get values which have been added to context by middleware.
 	ticket := c.MustGet(ticketKey).(database.Ticket)
 	knownTicket := c.MustGet(knownTicketKey).(bool)
-	dcrdClient := c.MustGet(dcrdKey).(*rpc.DcrdRPC)
-	dcrdErr := c.MustGet(dcrdErrorKey)
-	if dcrdErr != nil {
-		w.log.Errorf("%s: %v", funcName, dcrdErr.(error))
+	mondClient := c.MustGet(mondKey).(*rpc.MondRPC)
+	mondErr := c.MustGet(mondErrorKey)
+	if mondErr != nil {
+		w.log.Errorf("%s: %v", funcName, mondErr.(error))
 		w.sendError(types.ErrInternalError, c)
 		return
 	}
@@ -59,15 +59,15 @@ func (w *WebAPI) payFee(c *gin.Context) {
 	}
 
 	// Get ticket details.
-	rawTicket, err := dcrdClient.GetRawTransaction(ticket.Hash)
+	rawTicket, err := mondClient.GetRawTransaction(ticket.Hash)
 	if err != nil {
-		w.log.Errorf("%s: dcrd.GetRawTransaction for ticket failed (ticketHash=%s): %v", funcName, ticket.Hash, err)
+		w.log.Errorf("%s: mond.GetRawTransaction for ticket failed (ticketHash=%s): %v", funcName, ticket.Hash, err)
 		w.sendError(types.ErrInternalError, c)
 		return
 	}
 
 	// Ensure this ticket is eligible to vote at some point in the future.
-	canVote, err := canTicketVote(rawTicket, dcrdClient, w.cfg.Network)
+	canVote, err := canTicketVote(rawTicket, mondClient, w.cfg.Network)
 	if err != nil {
 		w.log.Errorf("%s: canTicketVote error (ticketHash=%s): %v", funcName, ticket.Hash, err)
 		w.sendError(types.ErrInternalError, c)
@@ -249,9 +249,9 @@ func (w *WebAPI) payFee(c *gin.Context) {
 		funcName, minFee, feePaid, ticket.Hash)
 
 	if ticket.Confirmed {
-		err = dcrdClient.SendRawTransaction(request.FeeTx)
+		err = mondClient.SendRawTransaction(request.FeeTx)
 		if err != nil {
-			w.log.Errorf("%s: dcrd.SendRawTransaction for fee tx failed (ticketHash=%s): %v",
+			w.log.Errorf("%s: mond.SendRawTransaction for fee tx failed (ticketHash=%s): %v",
 				funcName, ticket.Hash, err)
 
 			ticket.FeeTxStatus = database.FeeError

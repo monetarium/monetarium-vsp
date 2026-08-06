@@ -16,21 +16,21 @@ import (
 	"github.com/monetarium/monetarium-node/hdkeychain"
 	"github.com/monetarium/monetarium-vsp/database"
 	"github.com/monetarium/monetarium-vsp/internal/config"
-	"github.com/monetarium/monetarium-vsp/internal/vspd"
+	"github.com/monetarium/monetarium-vsp/internal/vspm"
 )
 
 const (
-	configFilename = "vspd.conf"
-	dbFilename     = "vspd.db"
+	configFilename = "vspm.conf"
+	dbFilename     = "vspm.db"
 )
 
 type conf struct {
 	HomeDir string `long:"homedir" description:"Path to application home directory."`
-	Network string `long:"network" description:"Decred network to use." choice:"mainnet" choice:"testnet" choice:"simnet"`
+	Network string `long:"network" description:"Monetarium network to use." choice:"mainnet" choice:"testnet" choice:"simnet"`
 }
 
 var defaultConf = conf{
-	HomeDir: dcrutil.AppDataDir("vspd", false),
+	HomeDir: dcrutil.AppDataDir("vspm", false),
 	Network: "mainnet",
 }
 
@@ -106,7 +106,7 @@ func writeConfig(homeDir string) error {
 	}
 
 	// Write a config file with default values to the provided home directory.
-	preParser := flags.NewParser(&vspd.DefaultConfig, flags.None)
+	preParser := flags.NewParser(&vspm.DefaultConfig, flags.None)
 	preIni := flags.NewIniParser(preParser)
 	err = preIni.WriteFile(configFile,
 		flags.IniIncludeComments|flags.IniIncludeDefaults)
@@ -183,7 +183,7 @@ func run() int {
 			return 1
 		}
 
-		log("New %s vspd database created in %s", network.Name, cfg.HomeDir)
+		log("New %s vspm database created in %s", network.Name, cfg.HomeDir)
 
 	case "writeconfig":
 		err = writeConfig(cfg.HomeDir)
@@ -193,7 +193,7 @@ func run() int {
 		}
 
 		log("Config file with default values written to %s", cfg.HomeDir)
-		log("Edit the file and fill in values specific to your vspd deployment")
+		log("Edit the file and fill in values specific to your vspm deployment")
 
 	case "retirexpub":
 		if len(remainingArgs) != 2 {

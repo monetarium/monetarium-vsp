@@ -85,11 +85,11 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>{{ stripWss .DcrdStatus.Host }}</td>
+                                        <td>{{ stripWss .MondStatus.Host }}</td>
                                         
-                                        {{ if .DcrdStatus.Connected }}
+                                        {{ if .MondStatus.Connected }}
                 
-                                            {{ if .DcrdStatus.BestBlockError }}
+                                            {{ if .MondStatus.BestBlockError }}
                                                 <td>
                                                     <div class="center">
                                                         <div class="status bad center with-text">
@@ -98,7 +98,7 @@
                                                     </div>
                                                 </td>
                                             {{ else }}
-                                                <td>{{ .DcrdStatus.BestBlockHeight }}</td>
+                                                <td>{{ .MondStatus.BestBlockHeight }}</td>
                                             {{ end }}
                 
                                         {{else}}

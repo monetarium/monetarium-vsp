@@ -30,10 +30,10 @@ type walletStatus struct {
 	BestBlockHeight int64  `json:"bestblockheight"`
 }
 
-// dcrdStatus describes the current status of the local instance of dcrd used by
-// vspd. This is used by the admin.html template, and also serialized to JSON
+// mondStatus describes the current status of the local instance of mond used by
+// vspm. This is used by the admin.html template, and also serialized to JSON
 // for the /admin/status endpoint.
-type dcrdStatus struct {
+type mondStatus struct {
 	Host            string `json:"host"`
 	Connected       bool   `json:"connected"`
 	BestBlockError  bool   `json:"bestblockerror"`
@@ -50,22 +50,22 @@ type searchResult struct {
 	MaxVoteChanges  int
 }
 
-func (w *WebAPI) dcrdStatus(c *gin.Context) dcrdStatus {
-	hostname := c.MustGet(dcrdHostKey).(string)
-	status := dcrdStatus{Host: hostname}
+func (w *WebAPI) mondStatus(c *gin.Context) mondStatus {
+	hostname := c.MustGet(mondHostKey).(string)
+	status := mondStatus{Host: hostname}
 
-	dcrdClient := c.MustGet(dcrdKey).(*rpc.DcrdRPC)
-	dcrdErr := c.MustGet(dcrdErrorKey)
-	if dcrdErr != nil {
-		w.log.Errorf("%v", dcrdErr.(error))
+	mondClient := c.MustGet(mondKey).(*rpc.MondRPC)
+	mondErr := c.MustGet(mondErrorKey)
+	if mondErr != nil {
+		w.log.Errorf("%v", mondErr.(error))
 		return status
 	}
 
 	status.Connected = true
 
-	bestBlock, err := dcrdClient.GetBlockCount()
+	bestBlock, err := mondClient.GetBlockCount()
 	if err != nil {
-		w.log.Errorf("Could not get dcrd block count: %v", err)
+		w.log.Errorf("Could not get mond block count: %v", err)
 		status.BestBlockError = true
 		return status
 	}
@@ -85,7 +85,7 @@ func (w *WebAPI) walletStatus(c *gin.Context) map[string]walletStatus {
 
 		walletInfo, err := v.WalletInfo()
 		if err != nil {
-			w.log.Errorf("dcrwallet.WalletInfo error (wallet=%s): %v", v.String(), err)
+			w.log.Errorf("monwallet.WalletInfo error (wallet=%s): %v", v.String(), err)
 			ws.InfoError = true
 		} else {
 			ws.DaemonConnected = walletInfo.DaemonConnected
@@ -96,7 +96,7 @@ func (w *WebAPI) walletStatus(c *gin.Context) map[string]walletStatus {
 
 		height, err := v.GetBestBlockHeight()
 		if err != nil {
-			w.log.Errorf("dcrwallet.GetBestBlockHeight error (wallet=%s): %v", v.String(), err)
+			w.log.Errorf("monwallet.GetBestBlockHeight error (wallet=%s): %v", v.String(), err)
 			ws.BestBlockError = true
 		} else {
 			ws.BestBlockHeight = height
@@ -131,16 +131,16 @@ func (w *WebAPI) statusJSON(c *gin.Context) {
 		}
 	}
 
-	dcrd := w.dcrdStatus(c)
+	mond := w.mondStatus(c)
 
-	// Respond with HTTP status 500 if dcrd has issues.
-	if !dcrd.Connected || dcrd.BestBlockError {
+	// Respond with HTTP status 500 if mond has issues.
+	if !mond.Connected || mond.BestBlockError {
 		httpStatus = http.StatusInternalServerError
 	}
 
 	c.AbortWithStatusJSON(httpStatus, gin.H{
 		"wallets": wallets,
-		"dcrd":    dcrd,
+		"mond":    mond,
 	})
 }
 
@@ -184,7 +184,7 @@ func (w *WebAPI) renderAdmin(c *gin.Context, searchResult *searchResult) {
 		"WebApiCache":   cacheData,
 		"WebApiCfg":     w.cfg,
 		"WalletStatus":  w.walletStatus(c),
-		"DcrdStatus":    w.dcrdStatus(c),
+		"MondStatus":    w.mondStatus(c),
 		"MissedTickets": missed,
 		"CurrentXPub":   currentXPub,
 		"OldXPubs":      oldXPubs,
@@ -222,17 +222,17 @@ func (w *WebAPI) ticketSearch(c *gin.Context) {
 	// confirmed.
 	var feeTxDecoded string
 	if ticket.FeeTxHex != "" {
-		dcrdClient := c.MustGet(dcrdKey).(*rpc.DcrdRPC)
-		dcrdErr := c.MustGet(dcrdErrorKey)
-		if dcrdErr != nil {
-			w.log.Errorf("%v", dcrdErr.(error))
-			c.String(http.StatusInternalServerError, "Could not get dcrd client")
+		mondClient := c.MustGet(mondKey).(*rpc.MondRPC)
+		mondErr := c.MustGet(mondErrorKey)
+		if mondErr != nil {
+			w.log.Errorf("%v", mondErr.(error))
+			c.String(http.StatusInternalServerError, "Could not get mond client")
 			return
 		}
 
-		resp, err := dcrdClient.DecodeRawTransaction(ticket.FeeTxHex)
+		resp, err := mondClient.DecodeRawTransaction(ticket.FeeTxHex)
 		if err != nil {
-			w.log.Errorf("dcrd.DecodeRawTransaction error: %w", err)
+			w.log.Errorf("mond.DecodeRawTransaction error: %w", err)
 			c.String(http.StatusInternalServerError, "Error decoding fee transaction")
 			return
 		}

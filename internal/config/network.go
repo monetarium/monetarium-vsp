@@ -12,11 +12,11 @@ import (
 
 type Network struct {
 	*chaincfg.Params
-	DcrdRPCServerPort   string
+	MondRPCServerPort   string
 	WalletRPCServerPort string
 	BlockExplorerURL    string
-	// MinWallets is the minimum number of voting wallets required for a vspd
-	// deployment on this network. vspd will log an error and refuse to start if
+	// MinWallets is the minimum number of voting wallets required for a vspm
+	// deployment on this network. vspm will log an error and refuse to start if
 	// fewer wallets are configured.
 	MinWallets int
 	// DCP0005Height is the activation height of DCP-0005 block header
@@ -30,19 +30,19 @@ type Network struct {
 	DCP0012Height int64
 }
 
-// Monetarium networks launched on a modern (dcrd 2.x era) rule set: the
+// Monetarium networks launched on a modern (mond 2.x era) rule set: the
 // DCP-0005/0010/0012 rules are active from the first block on every network,
 // so all three heights are 1 (mirroring how upstream configures simnet). The
 // legacy stake-version 4..10 deployments carried in chainparams are ancestry,
 // not history that played out on this chain.
 //
 // RPC ports follow the fork's own scheme (see monetarium-node sampleconfig
-// and monetarium-wallet internal/netparams): node RPC 9509/19509, wallet
+// and monwallet internal/netparams): node RPC 9509/19509, wallet
 // JSON-RPC 9510/19510 for mainnet/testnet respectively.
 
 var MainNet = Network{
 	Params:              chaincfg.MainNetParams(),
-	DcrdRPCServerPort:   "9509",
+	MondRPCServerPort:   "9509",
 	WalletRPCServerPort: "9510",
 	BlockExplorerURL:    "https://monetarium.online",
 	MinWallets:          3,
@@ -53,7 +53,7 @@ var MainNet = Network{
 
 var TestNet3 = Network{
 	Params:              chaincfg.TestNet3Params(),
-	DcrdRPCServerPort:   "19509",
+	MondRPCServerPort:   "19509",
 	WalletRPCServerPort: "19510",
 	BlockExplorerURL:    "https://testnet.monetarium.online",
 	MinWallets:          1,
@@ -64,7 +64,7 @@ var TestNet3 = Network{
 
 var SimNet = Network{
 	Params:              chaincfg.SimNetParams(),
-	DcrdRPCServerPort:   "19556",
+	MondRPCServerPort:   "19556",
 	WalletRPCServerPort: "19557",
 	BlockExplorerURL:    "...",
 	MinWallets:          1,

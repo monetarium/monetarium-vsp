@@ -21,8 +21,8 @@ import (
 )
 
 const (
-	vspdURL = "http://localhost:8800"
-	// dcrwallet RPC.
+	vspmURL = "http://localhost:8800"
+	// monwallet RPC.
 	rpcURL  = "wss://localhost:19110/ws"
 	rpcUser = "user"
 	rpcPass = "pass"
@@ -70,18 +70,18 @@ func run() int {
 	}
 	defer walletRPC.Close()
 
-	log.Infof("vpsd url: %s", vspdURL)
+	log.Infof("vpsd url: %s", vspmURL)
 
-	pubKey, err := getVspPubKey(vspdURL)
+	pubKey, err := getVspPubKey(vspmURL)
 	if err != nil {
 		log.Errorf("%v", err)
 		return 1
 	}
 
-	log.Infof("vspd pubkey: %x", pubKey)
+	log.Infof("vspm pubkey: %x", pubKey)
 
 	vClient := client.Client{
-		URL:    vspdURL,
+		URL:    vspmURL,
 		PubKey: pubKey,
 		Sign:   walletRPC.SignMessage,
 		Log:    log,
@@ -216,7 +216,7 @@ func run() int {
 
 		voteChoices[agendaID] = "yes"
 
-		// Sleep to ensure a new timestamp. vspd will reject old/reused timestamps.
+		// Sleep to ensure a new timestamp. vspm will reject old/reused timestamps.
 		time.Sleep(1001 * time.Millisecond)
 
 		voteChoiceReq := types.SetVoteChoicesRequest{

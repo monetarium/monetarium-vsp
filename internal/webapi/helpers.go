@@ -13,7 +13,7 @@ import (
 	"github.com/monetarium/monetarium-node/chaincfg/chainhash"
 	"github.com/monetarium/monetarium-node/dcrec/secp256k1"
 	"github.com/monetarium/monetarium-node/dcrutil"
-	dcrdtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
+	mondtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
 	"github.com/monetarium/monetarium-node/wire"
 	"github.com/monetarium/monetarium-vsp/database"
 	"github.com/monetarium/monetarium-vsp/internal/config"
@@ -86,7 +86,7 @@ func validTSpendPolicy(policy map[string]string) error {
 }
 
 // validPolicyOption checks that policy is one of the valid values accepted by
-// dcrwallet RPCs. Invalid values return an error.
+// monwallet RPCs. Invalid values return an error.
 func validPolicyOption(policy string) error {
 	switch policy {
 	case "yes", "no", "abstain", "invalid", "":
@@ -162,7 +162,7 @@ func validateTicketHash(hash string) error {
 // canTicketVote checks determines whether a ticket is able to vote at some
 // point in the future by checking that it is currently either in the mempool,
 // immature or live.
-func canTicketVote(rawTx *dcrdtypes.TxRawResult, dcrdClient node, network *config.Network) (bool, error) {
+func canTicketVote(rawTx *mondtypes.TxRawResult, mondClient node, network *config.Network) (bool, error) {
 
 	// Tickets which have more than (TicketMaturity+TicketExpiry+1)
 	// confirmations are too old to vote.
@@ -177,9 +177,9 @@ func canTicketVote(rawTx *dcrdtypes.TxRawResult, dcrdClient node, network *confi
 	}
 
 	// If ticket is currently live, it will be able to vote in future.
-	live, err := dcrdClient.ExistsLiveTicket(rawTx.Txid)
+	live, err := mondClient.ExistsLiveTicket(rawTx.Txid)
 	if err != nil {
-		return false, fmt.Errorf("dcrd.ExistsLiveTicket error: %w", err)
+		return false, fmt.Errorf("mond.ExistsLiveTicket error: %w", err)
 	}
 
 	return live, nil

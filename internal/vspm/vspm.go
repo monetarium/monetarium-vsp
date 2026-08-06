@@ -2,7 +2,7 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-package vspd
+package vspm
 
 import (
 	"context"
@@ -24,15 +24,15 @@ const (
 	// consistencyInterval is the time period between wallet consistency checks.
 	consistencyInterval = 30 * time.Minute
 
-	// dcrdInterval is the time period between dcrd connection checks.
-	dcrdInterval = time.Second * 15
+	// mondInterval is the time period between mond connection checks.
+	mondInterval = time.Second * 15
 )
 
-type Vspd struct {
+type Vspm struct {
 	network *config.Network
 	log     slog.Logger
 	db      *database.VspDatabase
-	dcrd    rpc.DcrdConnect
+	mond    rpc.MondConnect
 	wallets rpc.WalletConnect
 
 	blockNotifChan chan *wire.BlockHeader
@@ -43,13 +43,13 @@ type Vspd struct {
 }
 
 func New(network *config.Network, log slog.Logger, db *database.VspDatabase,
-	dcrd rpc.DcrdConnect, wallets rpc.WalletConnect, blockNotifChan chan *wire.BlockHeader) *Vspd {
+	mond rpc.MondConnect, wallets rpc.WalletConnect, blockNotifChan chan *wire.BlockHeader) *Vspm {
 
-	v := &Vspd{
+	v := &Vspm{
 		network: network,
 		log:     log,
 		db:      db,
-		dcrd:    dcrd,
+		mond:    mond,
 		wallets: wallets,
 
 		blockNotifChan: blockNotifChan,
@@ -58,7 +58,7 @@ func New(network *config.Network, log slog.Logger, db *database.VspDatabase,
 	return v
 }
 
-func (v *Vspd) Run(ctx context.Context) {
+func (v *Vspm) Run(ctx context.Context) {
 	// Run database integrity checks to ensure all data in database is present
 	// and up-to-date.
 	err := v.checkDatabaseIntegrity(ctx)
@@ -68,7 +68,7 @@ func (v *Vspd) Run(ctx context.Context) {
 			return
 		}
 
-		// vspd should still start if this fails, so just log an error.
+		// vspm should still start if this fails, so just log an error.
 		v.log.Errorf("Database integrity check failed: %v", err)
 	}
 
@@ -77,7 +77,7 @@ func (v *Vspd) Run(ctx context.Context) {
 		return
 	}
 
-	// Run the update function now to catch up with any blocks mined while vspd
+	// Run the update function now to catch up with any blocks mined while vspm
 	// was shut down.
 	v.update(ctx)
 
@@ -98,8 +98,8 @@ func (v *Vspd) Run(ctx context.Context) {
 	// Start all background tasks and notification handlers.
 	consistencyTicker := time.NewTicker(consistencyInterval)
 	defer consistencyTicker.Stop()
-	dcrdTicker := time.NewTicker(dcrdInterval)
-	defer dcrdTicker.Stop()
+	mondTicker := time.NewTicker(mondInterval)
+	defer mondTicker.Stop()
 
 	for {
 		select {
@@ -107,15 +107,15 @@ func (v *Vspd) Run(ctx context.Context) {
 		case <-consistencyTicker.C:
 			v.checkWalletConsistency(ctx)
 
-		// Ensure dcrd client is connected so notifications are received.
-		case <-dcrdTicker.C:
-			_, _, err := v.dcrd.Client()
+		// Ensure mond client is connected so notifications are received.
+		case <-mondTicker.C:
+			_, _, err := v.mond.Client()
 			if err != nil {
 				v.log.Error(err)
 			}
 
 		// Run the update function every time a block connected notification is
-		// received from dcrd.
+		// received from mond.
 		case header := <-v.blockNotifChan:
 			v.log.Debugf("Block notification %d (%s)", header.Height, header.BlockHash().String())
 			v.update(ctx)

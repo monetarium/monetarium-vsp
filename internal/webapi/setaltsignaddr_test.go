@@ -20,7 +20,7 @@ import (
 
 	"github.com/decred/slog"
 	"github.com/gin-gonic/gin"
-	dcrdtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
+	mondtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
 	"github.com/monetarium/monetarium-vsp/database"
 	"github.com/monetarium/monetarium-vsp/internal/config"
 	"github.com/monetarium/monetarium-vsp/types"
@@ -115,7 +115,7 @@ func randString(length int, charset string) string {
 var _ node = (*testNode)(nil)
 
 type testNode struct {
-	getRawTransaction    *dcrdtypes.TxRawResult
+	getRawTransaction    *mondtypes.TxRawResult
 	getRawTransactionErr error
 	existsLiveTicket     bool
 	existsLiveTicketErr  error
@@ -125,7 +125,7 @@ func (n *testNode) ExistsLiveTicket(_ string) (bool, error) {
 	return n.existsLiveTicket, n.existsLiveTicketErr
 }
 
-func (n *testNode) GetRawTransaction(_ string) (*dcrdtypes.TxRawResult, error) {
+func (n *testNode) GetRawTransaction(_ string) (*mondtypes.TxRawResult, error) {
 	return n.getRawTransaction, n.getRawTransactionErr
 }
 
@@ -136,7 +136,7 @@ func TestSetAltSignAddress(t *testing.T) {
 	// clients.
 	const testAddr = "MsMkhrc1z67m8iE56tFkDavsoHjeDiHFEwf"
 	tests := map[string]struct {
-		dcrdClientErr         bool
+		mondClientErr         bool
 		deformReq             int
 		addr                  string
 		node                  *testNode
@@ -149,7 +149,7 @@ func TestSetAltSignAddress(t *testing.T) {
 		"ok": {
 			addr: testAddr,
 			node: &testNode{
-				getRawTransaction: &dcrdtypes.TxRawResult{
+				getRawTransaction: &mondtypes.TxRawResult{
 					Confirmations: 1000,
 				},
 				getRawTransactionErr: nil,
@@ -157,8 +157,8 @@ func TestSetAltSignAddress(t *testing.T) {
 			},
 			wantHTTPStatus: http.StatusOK,
 		},
-		"dcrd client error": {
-			dcrdClientErr:  true,
+		"mond client error": {
+			mondClientErr:  true,
 			wantHTTPStatus: http.StatusInternalServerError,
 			wantErrCode:    types.ErrInternalError,
 			wantErrMsg:     types.ErrInternalError.DefaultMessage(),
@@ -181,7 +181,7 @@ func TestSetAltSignAddress(t *testing.T) {
 			wantErrCode:    types.ErrBadRequest,
 			wantErrMsg:     "wrong type for alternate signing address",
 		},
-		"getRawTransaction error from dcrd client": {
+		"getRawTransaction error from mond client": {
 			addr: testAddr,
 			node: &testNode{
 				getRawTransactionErr: errors.New("getRawTransaction error"),
@@ -190,10 +190,10 @@ func TestSetAltSignAddress(t *testing.T) {
 			wantErrCode:    types.ErrInternalError,
 			wantErrMsg:     types.ErrInternalError.DefaultMessage(),
 		},
-		"existsLiveTicket error from dcrd client": {
+		"existsLiveTicket error from mond client": {
 			addr: testAddr,
 			node: &testNode{
-				getRawTransaction: &dcrdtypes.TxRawResult{
+				getRawTransaction: &mondtypes.TxRawResult{
 					Confirmations: 1000,
 				},
 				existsLiveTicketErr: errors.New("existsLiveTicket error"),
@@ -205,7 +205,7 @@ func TestSetAltSignAddress(t *testing.T) {
 		"ticket can't vote": {
 			addr: testAddr,
 			node: &testNode{
-				getRawTransaction: &dcrdtypes.TxRawResult{
+				getRawTransaction: &mondtypes.TxRawResult{
 					Confirmations: 1000,
 				},
 				existsLiveTicket: false,
@@ -217,7 +217,7 @@ func TestSetAltSignAddress(t *testing.T) {
 		"only one alt sign addr allowed": {
 			addr: testAddr,
 			node: &testNode{
-				getRawTransaction: &dcrdtypes.TxRawResult{},
+				getRawTransaction: &mondtypes.TxRawResult{},
 				existsLiveTicket:  true,
 			},
 			isExistingAltSignAddr: true,
@@ -259,14 +259,14 @@ func TestSetAltSignAddress(t *testing.T) {
 			w := httptest.NewRecorder()
 			c, r := gin.CreateTestContext(w)
 
-			var dcrdErr error
-			if test.dcrdClientErr {
-				dcrdErr = errors.New("error")
+			var mondErr error
+			if test.mondClientErr {
+				mondErr = errors.New("error")
 			}
 
 			handle := func(c *gin.Context) {
-				c.Set(dcrdKey, test.node)
-				c.Set(dcrdErrorKey, dcrdErr)
+				c.Set(mondKey, test.node)
+				c.Set(mondErrorKey, mondErr)
 				c.Set(requestBytesKey, b[test.deformReq:])
 				api.setAltSignAddr(c)
 			}

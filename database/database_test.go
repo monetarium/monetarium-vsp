@@ -160,7 +160,7 @@ func testHTTPBackup(t *testing.T) {
 	}
 
 	header = "Content-Disposition"
-	expected = `attachment; filename="vspd.db"`
+	expected = `attachment; filename="vspm.db"`
 	if actual := rr.Header().Get(header); actual != expected {
 		t.Errorf("wrong %s header: expected %s, got %s",
 			header, expected, actual)

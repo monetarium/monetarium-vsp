@@ -27,7 +27,7 @@ const (
 	ticketBucketVersion = 3
 
 	// altSignAddrVersion adds a bucket to store alternate sign addresses used
-	// to verify messages sent to the vspd.
+	// to verify messages sent to the vspm.
 	altSignAddrVersion = 4
 
 	// xPubBucketVersion changes how the xpub key and its associated addr index
@@ -38,7 +38,7 @@ const (
 	xPubBucketVersion = 5
 
 	// latestVersion is the latest version of the database that is understood by
-	// vspd. Databases with recorded versions higher than this will fail to open
+	// vspm. Databases with recorded versions higher than this will fail to open
 	// (meaning any upgrades prevent reverting to older software).
 	latestVersion = xPubBucketVersion
 )

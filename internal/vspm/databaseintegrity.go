@@ -2,7 +2,7 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-package vspd
+package vspm
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 // checkDatabaseIntegrity starts the process of ensuring that all data expected
 // to be in the database is present and up to date.
-func (v *Vspd) checkDatabaseIntegrity(ctx context.Context) error {
+func (v *Vspm) checkDatabaseIntegrity(ctx context.Context) error {
 	err := v.checkPurchaseHeights()
 	if err != nil {
 		return fmt.Errorf("checkPurchaseHeights error: %w", err)
@@ -30,7 +30,7 @@ func (v *Vspd) checkDatabaseIntegrity(ctx context.Context) error {
 // checkPurchaseHeights ensures a purchase height is recorded for all confirmed
 // tickets in the database. This is necessary because of an old bug which, in
 // some circumstances, would prevent purchase height from being stored.
-func (v *Vspd) checkPurchaseHeights() error {
+func (v *Vspm) checkPurchaseHeights() error {
 	missing, err := v.db.GetMissingPurchaseHeight()
 	if err != nil {
 		// Cannot proceed if this fails, return.
@@ -44,7 +44,7 @@ func (v *Vspd) checkPurchaseHeights() error {
 
 	v.log.Warnf("%d tickets are missing purchase heights", len(missing))
 
-	dcrdClient, _, err := v.dcrd.Client()
+	mondClient, _, err := v.mond.Client()
 	if err != nil {
 		// Cannot proceed if this fails, return.
 		return err
@@ -52,7 +52,7 @@ func (v *Vspd) checkPurchaseHeights() error {
 
 	fixed := 0
 	for _, ticket := range missing {
-		tktTx, err := dcrdClient.GetRawTransaction(ticket.Hash)
+		tktTx, err := mondClient.GetRawTransaction(ticket.Hash)
 		if err != nil {
 			// Just log and continue, other tickets might succeed.
 			v.log.Errorf("Could not get raw tx for ticket %s: %v", ticket.Hash, err)
@@ -74,7 +74,7 @@ func (v *Vspd) checkPurchaseHeights() error {
 
 // checkRevoked ensures that any tickets in the database with outcome set to
 // revoked are updated to either expired or missed.
-func (v *Vspd) checkRevoked(ctx context.Context) error {
+func (v *Vspm) checkRevoked(ctx context.Context) error {
 	revoked, err := v.db.GetRevokedTickets()
 	if err != nil {
 		return fmt.Errorf("db.GetRevoked error: %w", err)
@@ -88,7 +88,7 @@ func (v *Vspd) checkRevoked(ctx context.Context) error {
 	v.log.Warnf("Updating %s in revoked status, this may take a while...",
 		pluralize(len(revoked), "ticket"))
 
-	dcrdClient, _, err := v.dcrd.Client()
+	mondClient, _, err := v.mond.Client()
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (v *Vspd) checkRevoked(ctx context.Context) error {
 	// earliest height one of them matured.
 	startHeight := revoked.EarliestPurchaseHeight() + int64(v.network.TicketMaturity)
 
-	spent, _, err := v.findSpentTickets(ctx, dcrdClient, revoked, startHeight)
+	spent, _, err := v.findSpentTickets(ctx, mondClient, revoked, startHeight)
 	if err != nil {
 		return fmt.Errorf("findSpentTickets error: %w", err)
 	}
