@@ -1,41 +1,41 @@
 {{ define "vsp-stats" }}
 
 <div class="row vsp-stats">
-    
+
     <div class="col-6 col-sm-4 col-lg-2 py-3">
         <div class="vsp-stat-title">Live tickets</div>
-        <div class="vsp-stat-value">{{ comma .WebApiCache.Voting }}</div>
+        <div class="vsp-stat-value" data-stat="voting">{{ comma .WebApiCache.Voting }}</div>
     </div>
 
     <div class="col-6 col-sm-4 col-lg-2 py-3">
         <div class="vsp-stat-title">Voted tickets</div>
-        <div class="vsp-stat-value">{{ comma .WebApiCache.Voted }}</div>
+        <div class="vsp-stat-value" data-stat="voted">{{ comma .WebApiCache.Voted }}</div>
     </div>
 
     <div class="col-6 col-sm-4 col-lg-2 py-3">
         <div class="vsp-stat-title">Expired tickets</div>
         <div class="vsp-stat-value">
-            {{ comma .WebApiCache.Expired }}
-            <span class="vsp-stat-subtext">({{ float32ToPercent .WebApiCache.ExpiredProportion }})</span>
+            <span data-stat="expired">{{ comma .WebApiCache.Expired }}</span>
+            <span class="vsp-stat-subtext">(<span data-stat="expiredProportion">{{ float32ToPercent .WebApiCache.ExpiredProportion }}</span>)</span>
         </div>
     </div>
 
     <div class="col-6 col-sm-4 col-lg-2 py-3">
         <div class="vsp-stat-title">Missed tickets</div>
         <div class="vsp-stat-value">
-            {{ comma .WebApiCache.Missed }}
-            <span class="vsp-stat-subtext">({{ float32ToPercent .WebApiCache.MissedProportion }})</span>
+            <span data-stat="missed">{{ comma .WebApiCache.Missed }}</span>
+            <span class="vsp-stat-subtext">(<span data-stat="missedProportion">{{ float32ToPercent .WebApiCache.MissedProportion }}</span>)</span>
         </div>
     </div>
 
     <div class="col-6 col-sm-4 col-lg-2 py-3">
         <div class="vsp-stat-title">VSP Fee</div>
-        <div class="vsp-stat-value">{{ .WebApiCfg.VSPFee }}%</div>
+        <div class="vsp-stat-value" data-stat="feePercentage">{{ .WebApiCfg.VSPFee }}%</div>
     </div>
 
     <div class="col-6 col-sm-4 col-lg-2 py-3">
         <div class="vsp-stat-title">Network Proportion</div>
-        <div class="vsp-stat-value">{{ float32ToPercent .WebApiCache.NetworkProportion }}</div>
+        <div class="vsp-stat-value" data-stat="networkProportion">{{ float32ToPercent .WebApiCache.NetworkProportion }}</div>
     </div>
 
 </div>

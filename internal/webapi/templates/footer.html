@@ -11,7 +11,7 @@
         <div class="vsp-footer-left col-md-8 col-12 justify-content-center justify-content-md-start">
           <div class="d-inline-block text-left">
             <p class="py-4 m-0">
-              <strong>Stats&nbsp;updated:</strong>&nbsp;{{ timeAgo .WebApiCache.UpdateTime }}
+              <strong>Stats&nbsp;updated:</strong>&nbsp;<span data-stat="statsUpdated" data-timestamp="{{ .WebApiCache.UpdateTime.Unix }}">{{ timeAgo .WebApiCache.UpdateTime }}</span>
               <br />
               <strong>Support:</strong>&nbsp;<a href="{{ supportURL .WebApiCfg.SupportEmail }}" target="_blank" rel="noopener noreferrer">{{ supportLabel .WebApiCfg.SupportEmail }}</a>
               <br />
@@ -36,6 +36,8 @@
   
     </div>
   </footer>
+
+  <script src="/public/js/live-stats.js?v={{ .WebApiCfg.VspdVersion }}" defer></script>
 
 </body>
 </html>
