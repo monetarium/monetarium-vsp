@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"os"
 	"regexp"
+	"strings"
+	"testing"
 
 	"github.com/monetarium/monetarium-vsp/database"
 	"github.com/monetarium/monetarium-vsp/internal/config"
-	"strings"
-	"testing"
 )
 
 // TestAdminTemplatesNesting renders the admin page (with and without a ticket
@@ -54,8 +53,9 @@ func TestAdminTemplatesNesting(t *testing.T) {
 			t.Fatalf("%s: execute: %v", name, err)
 		}
 		if err := checkNesting(buf.String()); err != nil {
-			t.Errorf("%s: %v", name, err)
-			os.WriteFile("/tmp/"+name+".render", buf.Bytes(), 0o600)
+			// Keep the rendered page next to the failure: the mismatch is
+			// far easier to read in the output than in the error message.
+			t.Errorf("%s: %v\nrendered:\n%s", name, err, buf.String())
 		}
 	}
 }
