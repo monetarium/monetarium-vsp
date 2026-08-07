@@ -51,7 +51,7 @@ var (
 )
 
 const (
-	// backupFileMode is the file mode for database backup files written by vspd.
+	// backupFileMode is the file mode for database backup files written by vspm.
 	backupFileMode = 0600
 )
 
@@ -86,7 +86,7 @@ func (vdb *VspDatabase) WriteHotBackupFile() error {
 	return nil
 }
 
-// CreateNew intializes a new bbolt database with all of the necessary vspd
+// CreateNew intializes a new bbolt database with all of the necessary vspm
 // buckets, and inserts:
 // - the provided extended pubkey (to be used for deriving fee addresses).
 // - an ed25519 keypair to sign API responses.
@@ -180,7 +180,7 @@ func CreateNew(dbFile, feeXPub string) error {
 func Open(dbFile string, log slog.Logger, maxVoteChangeRecords int) (*VspDatabase, error) {
 	// Error if db file does not exist. This is needed because bolt.Open will
 	// silently create a new empty database if the file does not exist. A new
-	// vspd database should be created with the CreateNew() function.
+	// vspm database should be created with the CreateNew() function.
 	_, err := os.Stat(dbFile)
 	if os.IsNotExist(err) {
 		return nil, err
@@ -352,7 +352,7 @@ func (vdb *VspDatabase) Version() (uint32, error) {
 // BackupDB streams a backup of the database over an http response writer.
 func (vdb *VspDatabase) BackupDB(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", `attachment; filename="vspd.db"`)
+	w.Header().Set("Content-Disposition", `attachment; filename="vspm.db"`)
 
 	err := vdb.db.View(func(tx *bolt.Tx) error {
 		w.Header().Set("Content-Length", strconv.Itoa(int(tx.Size())))

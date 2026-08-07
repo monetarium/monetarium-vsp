@@ -11,12 +11,12 @@ import (
 
 	"github.com/decred/slog"
 	"github.com/monetarium/monetarium-node/chaincfg"
-	dcrdtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
+	mondtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
 	"github.com/monetarium/monetarium-node/wire"
 	wallettypes "github.com/monetarium/monetarium-wallet/rpc/jsonrpc/types"
 )
 
-// WalletRPC provides methods for calling dcrwallet JSON-RPCs without exposing the details
+// WalletRPC provides methods for calling monwallet JSON-RPCs without exposing the details
 // of JSON encoding.
 type WalletRPC struct {
 	Caller
@@ -46,7 +46,7 @@ func (w *WalletConnect) Close() {
 	for _, client := range w.clients {
 		client.Close()
 	}
-	w.log.Debug("dcrwallet clients closed")
+	w.log.Debug("monwallet clients closed")
 }
 
 // Clients loops over each wallet and tries to establish a connection. It
@@ -60,7 +60,7 @@ func (w *WalletConnect) Clients() ([]*WalletRPC, []string) {
 
 		c, newConnection, err := connect.dial(context.TODO())
 		if err != nil {
-			w.log.Errorf("dcrwallet dial error: %v", err)
+			w.log.Errorf("monwallet dial error: %v", err)
 			failedConnections = append(failedConnections, connect.addr)
 			continue
 		}
@@ -68,13 +68,13 @@ func (w *WalletConnect) Clients() ([]*WalletRPC, []string) {
 		walletRPC := &WalletRPC{c}
 
 		// If this is a reused connection, we don't need to validate the
-		// dcrwallet config again.
+		// monwallet config again.
 		if !newConnection {
 			walletClients = append(walletClients, walletRPC)
 			continue
 		}
 
-		// Verify dcrwallet and dcrd are at the required versions.
+		// Verify monwallet and mond are at the required versions.
 		err = walletRPC.checkVersions()
 		if err != nil {
 			w.log.Errorf("Version check failed (wallet=%s): %v", c.String(), err)
@@ -83,26 +83,26 @@ func (w *WalletConnect) Clients() ([]*WalletRPC, []string) {
 			continue
 		}
 
-		// Verify dcrwallet is on the correct network.
+		// Verify monwallet is on the correct network.
 		netID, err := walletRPC.getCurrentNet()
 		if err != nil {
-			w.log.Errorf("dcrwallet.GetCurrentNet error (wallet=%s): %v", c.String(), err)
+			w.log.Errorf("monwallet.GetCurrentNet error (wallet=%s): %v", c.String(), err)
 			failedConnections = append(failedConnections, connect.addr)
 			connect.Close()
 			continue
 		}
 		if netID != w.params.Net {
-			w.log.Errorf("dcrwallet on wrong network (wallet=%s): running on %s, expected %s",
+			w.log.Errorf("monwallet on wrong network (wallet=%s): running on %s, expected %s",
 				c.String(), netID, w.params.Net)
 			failedConnections = append(failedConnections, connect.addr)
 			connect.Close()
 			continue
 		}
 
-		// Verify dcrwallet is voting and unlocked.
+		// Verify monwallet is voting and unlocked.
 		walletInfo, err := walletRPC.WalletInfo()
 		if err != nil {
-			w.log.Errorf("dcrwallet.WalletInfo error (wallet=%s): %v", c.String(), err)
+			w.log.Errorf("monwallet.WalletInfo error (wallet=%s): %v", c.String(), err)
 			failedConnections = append(failedConnections, connect.addr)
 			connect.Close()
 			continue
@@ -133,16 +133,16 @@ func (w *WalletConnect) Clients() ([]*WalletRPC, []string) {
 }
 
 // checkVersion uses version RPC to retrieve the binary and API versions
-// dcrwallet and its backing dcrd. An error is returned if there is not semver
+// monwallet and its backing mond. An error is returned if there is not semver
 // compatibility with the minimum expected versions.
 func (c *WalletRPC) checkVersions() error {
-	var verMap map[string]dcrdtypes.VersionResult
+	var verMap map[string]mondtypes.VersionResult
 	err := c.Call(context.TODO(), "version", &verMap)
 	if err != nil {
 		return err
 	}
 
-	// Presence of dcrd and dcrdjsonrpcapi in this map confirms dcrwallet is not
+	// Presence of mond and mondjsonrpcapi in this map confirms monwallet is not
 	// running in SPV mode.
 	return errors.Join(
 		checkVersion(verMap, "monetarium"),
@@ -163,7 +163,7 @@ func (c *WalletRPC) getCurrentNet() (wire.CurrencyNet, error) {
 }
 
 // WalletInfo uses walletinfo RPC to retrieve information about how the
-// dcrwallet instance is configured.
+// monwallet instance is configured.
 func (c *WalletRPC) WalletInfo() (*wallettypes.WalletInfoResult, error) {
 	var walletInfo wallettypes.WalletInfoResult
 	err := c.Call(context.TODO(), "walletinfo", &walletInfo)
@@ -199,7 +199,7 @@ func (c *WalletRPC) SetVoteChoice(agenda, choice, ticketHash string) error {
 }
 
 // GetBestBlockHeight uses getblockcount RPC to query the height of the best
-// block known by the dcrwallet instance.
+// block known by the monwallet instance.
 func (c *WalletRPC) GetBestBlockHeight() (int64, error) {
 	var height int64
 	err := c.Call(context.TODO(), "getblockcount", &height)
@@ -210,7 +210,7 @@ func (c *WalletRPC) GetBestBlockHeight() (int64, error) {
 }
 
 // TicketInfo uses ticketinfo RPC to retrieve a detailed list of all tickets
-// known by this dcrwallet instance.
+// known by this monwallet instance.
 func (c *WalletRPC) TicketInfo(startHeight int64) (map[string]*wallettypes.TicketInfoResult, error) {
 	var result []*wallettypes.TicketInfoResult
 	err := c.Call(context.TODO(), "ticketinfo", &result, startHeight)

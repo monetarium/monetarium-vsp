@@ -259,12 +259,12 @@ body {
 
 .vsp-tabset table td {
     word-break: break-word;
-    font-family: "vspd-code";
+    font-family: "vspm-code";
 }
 
 .vsp-tabset table th {
     white-space: nowrap;
-    font-family: "vspd";
+    font-family: "vspm";
     vertical-align: top;
     font-weight: normal;
     background-color: #edeff1;
@@ -314,11 +314,11 @@ body {
 
 .ticket-search-tab input[type="search"] {
     font-size: 14px;
-    font-family: "vspd-code";
+    font-family: "vspm-code";
 }
 
 .ticket-search-tab input[type="search"]::placeholder {
-    font-family: "vspd";
+    font-family: "vspm";
 }
 
 .ticket-search-tab table {

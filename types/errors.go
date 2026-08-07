@@ -7,7 +7,7 @@ package types
 import "net/http"
 
 // ErrorCode is an integer which represents a kind of error which may be
-// encountered by vspd.
+// encountered by vspm.
 type ErrorCode int64
 
 const (

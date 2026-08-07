@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/sessions"
 )
 
-// NOTE: This test does not test any vspd code.
+// NOTE: This test does not test any vspm code.
 //
 // If the cookie store secret changes unexpectedly (common during development)
 // the securecookie library returns an error with a hard-coded, non-exported
@@ -22,7 +22,7 @@ import (
 //	"securecookie: the value is not valid"
 //
 // TestCookieSecretError ensures the string returned by the lib does not change,
-// which is important because vspd checks for the error using string comparison.
+// which is important because vspm checks for the error using string comparison.
 func TestCookieSecretError(t *testing.T) {
 
 	// Create a cookie store, get a cookie from it.

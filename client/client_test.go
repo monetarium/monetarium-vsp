@@ -25,47 +25,47 @@ func TestErrorDetails(t *testing.T) {
 		respHTTPStatus int
 		respBodyBytes  []byte
 		expectedErr    string
-		vspdError      bool
-		vspdErrCode    types.ErrorCode
+		vspmError      bool
+		vspmErrCode    types.ErrorCode
 	}{
-		"500, vspd error (generic bad request)": {
+		"500, vspm error (generic bad request)": {
 			respHTTPStatus: 500,
 			respBodyBytes:  []byte(`{"code": 0, "message": "bad request"}`),
 			expectedErr:    `bad request`,
-			vspdError:      true,
-			vspdErrCode:    types.ErrBadRequest,
+			vspmError:      true,
+			vspmErrCode:    types.ErrBadRequest,
 		},
-		"500, vspd error (generic internal error)": {
+		"500, vspm error (generic internal error)": {
 			respHTTPStatus: 500,
 			respBodyBytes:  []byte(`{"code": 1, "message": "something terrible happened"}`),
 			expectedErr:    `something terrible happened`,
-			vspdError:      true,
-			vspdErrCode:    types.ErrInternalError,
+			vspmError:      true,
+			vspmErrCode:    types.ErrInternalError,
 		},
-		"428, vspd error (cannot broadcast fee)": {
+		"428, vspm error (cannot broadcast fee)": {
 			respHTTPStatus: 428,
 			respBodyBytes:  []byte(`{"code": 16, "message": "fee transaction could not be broadcast due to unknown outputs"}`),
 			expectedErr:    `fee transaction could not be broadcast due to unknown outputs`,
-			vspdError:      true,
-			vspdErrCode:    types.ErrCannotBroadcastFeeUnknownOutputs,
+			vspmError:      true,
+			vspmErrCode:    types.ErrCannotBroadcastFeeUnknownOutputs,
 		},
 		"500, no body": {
 			respHTTPStatus: 500,
 			respBodyBytes:  nil,
 			expectedErr:    `http status 500 (Internal Server Error) with no body`,
-			vspdError:      false,
+			vspmError:      false,
 		},
-		"500, non vspd error": {
+		"500, non vspm error": {
 			respHTTPStatus: 500,
 			respBodyBytes:  []byte(`an error occurred`),
 			expectedErr:    `http status 500 (Internal Server Error) with body "an error occurred"`,
-			vspdError:      false,
+			vspmError:      false,
 		},
-		"500, non vspd error (json)": {
+		"500, non vspm error (json)": {
 			respHTTPStatus: 500,
 			respBodyBytes:  []byte(`{"some": "json"}`),
 			expectedErr:    `http status 500 (Internal Server Error) with body "{\"some\": \"json\"}"`,
-			vspdError:      false,
+			vspmError:      false,
 		},
 	}
 
@@ -100,16 +100,16 @@ func TestErrorDetails(t *testing.T) {
 					testData.expectedErr, err.Error())
 			}
 
-			if testData.vspdError {
-				// Error should be unwrappable as a vspd error response.
+			if testData.vspmError {
+				// Error should be unwrappable as a vspm error response.
 				var e types.ErrorResponse
 				if !errors.As(err, &e) {
-					t.Fatal("unable to unwrap vspd error")
+					t.Fatal("unable to unwrap vspm error")
 				}
 
-				if e.Code != testData.vspdErrCode {
-					t.Fatalf("incorrect vspd error code, expected %d, got %d",
-						testData.vspdErrCode, e.Code)
+				if e.Code != testData.vspmErrCode {
+					t.Fatalf("incorrect vspm error code, expected %d, got %d",
+						testData.vspmErrCode, e.Code)
 				}
 			}
 

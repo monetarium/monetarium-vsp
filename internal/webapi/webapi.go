@@ -40,7 +40,7 @@ type Config struct {
 	Debug                bool
 	Designation          string
 	MaxVoteChangeRecords int
-	VspdVersion          string
+	VspmVersion          string
 }
 
 const (
@@ -55,9 +55,9 @@ const (
 // Hard-coded keys used for storing values in the web context.
 const (
 	sessionKey           = "Session"
-	dcrdKey              = "DcrdClient"
-	dcrdHostKey          = "DcrdHostname"
-	dcrdErrorKey         = "DcrdClientErr"
+	mondKey              = "MondClient"
+	mondHostKey          = "MondHostname"
+	mondErrorKey         = "MondClientErr"
 	cacheKey             = "Cache"
 	walletsKey           = "WalletClients"
 	failedWalletsKey     = "FailedWalletClients"
@@ -80,7 +80,7 @@ type WebAPI struct {
 	listener      net.Listener
 }
 
-func New(vdb *database.VspDatabase, log slog.Logger, dcrd rpc.DcrdConnect,
+func New(vdb *database.VspDatabase, log slog.Logger, mond rpc.MondConnect,
 	wallets rpc.WalletConnect, cfg Config) (*WebAPI, error) {
 
 	// Get keys for signing API responses from the database.
@@ -91,7 +91,7 @@ func New(vdb *database.VspDatabase, log slog.Logger, dcrd rpc.DcrdConnect,
 
 	// Populate cached VSP stats before starting webserver.
 	encodedPubKey := base64.StdEncoding.EncodeToString(signPubKey)
-	cache := newCache(encodedPubKey, log, vdb, dcrd, wallets)
+	cache := newCache(encodedPubKey, log, vdb, mond, wallets)
 	err = cache.update()
 	if err != nil {
 		log.Errorf("Could not initialize VSP stats cache: %v", err)
@@ -135,7 +135,7 @@ func New(vdb *database.VspDatabase, log slog.Logger, dcrd rpc.DcrdConnect,
 	}
 
 	w.server = &http.Server{
-		Handler:      w.router(cookieSecret, dcrd, wallets),
+		Handler:      w.router(cookieSecret, mond, wallets),
 		ReadTimeout:  5 * time.Second,  // slow requests should not hold connections opened
 		WriteTimeout: 60 * time.Second, // hung responses must die
 	}
@@ -193,7 +193,7 @@ func (w *WebAPI) Run(ctx context.Context) {
 	wg.Wait()
 }
 
-func (w *WebAPI) router(cookieSecret []byte, dcrd rpc.DcrdConnect, wallets rpc.WalletConnect) *gin.Engine {
+func (w *WebAPI) router(cookieSecret []byte, mond rpc.MondConnect, wallets rpc.WalletConnect) *gin.Engine {
 	// With release mode enabled, gin will only read template files once and cache them.
 	// With release mode disabled, templates will be reloaded on the fly.
 	if !w.cfg.Debug {
@@ -247,11 +247,11 @@ func (w *WebAPI) router(cookieSecret []byte, dcrd rpc.DcrdConnect, wallets rpc.W
 
 	api := router.Group("/api/v3")
 	api.GET("/vspinfo", w.requireWebCache, w.vspInfo)
-	api.POST("/setaltsignaddr", w.vspMustBeOpen, w.withDcrdClient(dcrd), broadcastTicket, w.vspAuth, w.setAltSignAddr)
-	api.POST("/feeaddress", w.vspMustBeOpen, w.withDcrdClient(dcrd), broadcastTicket, w.vspAuth, w.feeAddress)
-	api.POST("/ticketstatus", w.withDcrdClient(dcrd), w.vspAuth, w.ticketStatus)
-	api.POST("/payfee", w.vspMustBeOpen, w.withDcrdClient(dcrd), w.vspAuth, w.payFee)
-	api.POST("/setvotechoices", w.withDcrdClient(dcrd), w.withWalletClients(wallets), w.vspAuth, w.setVoteChoices)
+	api.POST("/setaltsignaddr", w.vspMustBeOpen, w.withMondClient(mond), broadcastTicket, w.vspAuth, w.setAltSignAddr)
+	api.POST("/feeaddress", w.vspMustBeOpen, w.withMondClient(mond), broadcastTicket, w.vspAuth, w.feeAddress)
+	api.POST("/ticketstatus", w.withMondClient(mond), w.vspAuth, w.ticketStatus)
+	api.POST("/payfee", w.vspMustBeOpen, w.withMondClient(mond), w.vspAuth, w.payFee)
+	api.POST("/setvotechoices", w.withMondClient(mond), w.withWalletClients(wallets), w.vspAuth, w.setVoteChoices)
 
 	// Website routes.
 
@@ -280,14 +280,14 @@ func (w *WebAPI) router(cookieSecret []byte, dcrd rpc.DcrdConnect, wallets rpc.W
 		w.withSession(cookieStore),
 		w.requireAdmin)
 
-	admin.GET("", w.withDcrdClient(dcrd), w.adminPage)
-	admin.POST("/ticket", w.withDcrdClient(dcrd), w.ticketSearch)
+	admin.GET("", w.withMondClient(mond), w.adminPage)
+	admin.POST("/ticket", w.withMondClient(mond), w.ticketSearch)
 	admin.GET("/backup", w.downloadDatabaseBackup)
 	admin.POST("/logout", w.adminLogout)
 
 	// Require Basic HTTP Auth on /admin/status endpoint.
 	basic := router.Group("/admin").Use(
-		w.withDcrdClient(dcrd), w.withWalletClients(wallets), gin.BasicAuth(gin.Accounts{
+		w.withMondClient(mond), w.withWalletClients(wallets), gin.BasicAuth(gin.Accounts{
 			"admin": w.cfg.AdminPass,
 		}),
 	)

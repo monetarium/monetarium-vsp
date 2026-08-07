@@ -9,20 +9,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	dcrdtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
+	mondtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
 	"github.com/monetarium/monetarium-node/txscript/stdaddr"
 	"github.com/monetarium/monetarium-vsp/database"
 	"github.com/monetarium/monetarium-vsp/rpc"
 	"github.com/monetarium/monetarium-vsp/types"
 )
 
-// Ensure that Node is satisfied by *rpc.DcrdRPC.
-var _ node = (*rpc.DcrdRPC)(nil)
+// Ensure that Node is satisfied by *rpc.MondRPC.
+var _ node = (*rpc.MondRPC)(nil)
 
-// node is satisfied by *rpc.DcrdRPC and retrieves data from the blockchain.
+// node is satisfied by *rpc.MondRPC and retrieves data from the blockchain.
 type node interface {
 	ExistsLiveTicket(ticketHash string) (bool, error)
-	GetRawTransaction(txHash string) (*dcrdtypes.TxRawResult, error)
+	GetRawTransaction(txHash string) (*mondtypes.TxRawResult, error)
 }
 
 // setAltSignAddr is the handler for "POST /api/v3/setaltsignaddr".
@@ -31,10 +31,10 @@ func (w *WebAPI) setAltSignAddr(c *gin.Context) {
 	const funcName = "setAltSignAddr"
 
 	// Get values which have been added to context by middleware.
-	dcrdClient := c.MustGet(dcrdKey).(node)
-	dcrdErr := c.MustGet(dcrdErrorKey)
-	if dcrdErr != nil {
-		w.log.Errorf("%s: %v", funcName, dcrdErr.(error))
+	mondClient := c.MustGet(mondKey).(node)
+	mondErr := c.MustGet(mondErrorKey)
+	if mondErr != nil {
+		w.log.Errorf("%s: %v", funcName, mondErr.(error))
 		w.sendError(types.ErrInternalError, c)
 		return
 	}
@@ -77,15 +77,15 @@ func (w *WebAPI) setAltSignAddr(c *gin.Context) {
 	}
 
 	// Get ticket details.
-	rawTicket, err := dcrdClient.GetRawTransaction(ticketHash)
+	rawTicket, err := mondClient.GetRawTransaction(ticketHash)
 	if err != nil {
-		w.log.Errorf("%s: dcrd.GetRawTransaction for ticket failed (ticketHash=%s): %v", funcName, ticketHash, err)
+		w.log.Errorf("%s: mond.GetRawTransaction for ticket failed (ticketHash=%s): %v", funcName, ticketHash, err)
 		w.sendError(types.ErrInternalError, c)
 		return
 	}
 
 	// Ensure this ticket is eligible to vote at some point in the future.
-	canVote, err := canTicketVote(rawTicket, dcrdClient, w.cfg.Network)
+	canVote, err := canTicketVote(rawTicket, mondClient, w.cfg.Network)
 	if err != nil {
 		w.log.Errorf("%s: canTicketVote error (ticketHash=%s): %v", funcName, ticketHash, err)
 		w.sendError(types.ErrInternalError, c)

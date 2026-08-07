@@ -11,7 +11,7 @@ set -e
 
 go version
 
-# This list needs to be updated if new submodules are added to the vspd repo.
+# This list needs to be updated if new submodules are added to the vspm repo.
 submodules="client types"
 
 # Test main module.

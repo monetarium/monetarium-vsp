@@ -16,7 +16,7 @@ type blockConnectedHandler struct {
 	log            slog.Logger
 }
 
-// Notify is called every time a notification is received from dcrd client.
+// Notify is called every time a notification is received from mond client.
 // A wsrpc.Client will never call Notify concurrently. Notify should not return
 // an error because that will cause the client to close and no further
 // notifications will be received until a new connection is established.
@@ -27,7 +27,7 @@ func (n *blockConnectedHandler) Notify(method string, msg json.RawMessage) error
 
 	header, err := parseBlockConnected(msg)
 	if err != nil {
-		n.log.Errorf("Failed to parse dcrd block notification: %v", err)
+		n.log.Errorf("Failed to parse mond block notification: %v", err)
 		return nil
 	}
 

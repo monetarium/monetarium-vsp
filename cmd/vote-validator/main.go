@@ -23,7 +23,7 @@ import (
 const (
 	logPath = "./vote-validator.log"
 
-	// Send tx hashes to dcrdata in "chunks" to avoid hitting request size limits.
+	// Send tx hashes to mondata in "chunks" to avoid hitting request size limits.
 	chunkSize = 2000
 )
 
@@ -34,9 +34,9 @@ var cfg struct {
 }
 
 type votedTicket struct {
-	// From vspd db.
+	// From vspm db.
 	ticket database.Ticket
-	// From dcrdata.
+	// From mondata.
 	voteHeight  uint32
 	voteVersion uint32
 	vote        map[string]string
@@ -66,7 +66,7 @@ func run() int {
 		network = &config.MainNet
 	}
 
-	dcrdata := &dcrdataClient{URL: network.BlockExplorerURL}
+	mondata := &mondataClient{URL: network.BlockExplorerURL}
 
 	// Get the latest vote version. Any votes which don't match this version
 	// will be ignored.
@@ -96,7 +96,7 @@ func run() int {
 	//   - Store the tickets in a map using their hash as the key. This makes
 	//     it easier to reference them later.
 	//   - Create an array of all hashes. This can easily be sliced into
-	//     "chunks" and sent to dcrdata.
+	//     "chunks" and sent to mondata.
 
 	ticketMap := make(map[string]*votedTicket, numTickets)
 	ticketHashes := make([]string, 0)
@@ -105,8 +105,8 @@ func run() int {
 		ticketHashes = append(ticketHashes, t.Hash)
 	}
 
-	// Use dcrdata to get spender info for voted tickets (dcrd can't do this).
-	log.Infof("Getting vote info from %s", dcrdata.URL)
+	// Use mondata to get spender info for voted tickets (mond can't do this).
+	log.Infof("Getting vote info from %s", mondata.URL)
 	for i := 0; i < numTickets; i += chunkSize {
 		// Stop if shutdown requested.
 		if ctx.Err() != nil {
@@ -119,7 +119,7 @@ func run() int {
 		}
 
 		// Get the tx info for each ticket.
-		ticketTxns, err := dcrdata.txns(ctx, ticketHashes[i:end], true)
+		ticketTxns, err := mondata.txns(ctx, ticketHashes[i:end], true)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return 0
@@ -136,7 +136,7 @@ func run() int {
 			mapSpenderToTicket[spenderHash] = txn.TxID
 		}
 
-		spenderTxns, err := dcrdata.txns(ctx, spenderHashes, false)
+		spenderTxns, err := mondata.txns(ctx, spenderHashes, false)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return 0
@@ -154,7 +154,7 @@ func run() int {
 				log.Error(err)
 				return 1
 			}
-			// dcrd/blockchain/stake/staketx.go - SSGenBlockVotedOn()
+			// mond/blockchain/stake/staketx.go - SSGenBlockVotedOn()
 			votedHeight := binary.LittleEndian.Uint32(vOut0Script[34:38])
 
 			// Extract vote version and votebits from vOut[1]
@@ -163,10 +163,10 @@ func run() int {
 				log.Error(err)
 				return 1
 			}
-			// dcrd/blockchain/stake/staketx.go - SSGenVersion()
+			// mond/blockchain/stake/staketx.go - SSGenVersion()
 			voteVersion := binary.LittleEndian.Uint32(vOut1Script[4:8])
 
-			// dcrd/blockchain/stake/staketx.go - SSGenVoteBits()
+			// mond/blockchain/stake/staketx.go - SSGenVoteBits()
 			votebits := binary.LittleEndian.Uint16(vOut1Script[2:4])
 
 			// Get the recorded on-chain votes for this ticket.

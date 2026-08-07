@@ -2,7 +2,7 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-package vspd
+package vspm
 
 import (
 	"errors"
@@ -23,26 +23,26 @@ import (
 )
 
 const (
-	configFilename = "vspd.conf"
-	dbFilename     = "vspd.db"
+	configFilename = "vspm.conf"
+	dbFilename     = "vspm.db"
 )
 
-// Config defines the configuration options for the vspd process.
+// Config defines the configuration options for the vspm process.
 type Config struct {
 	Listen          string        `long:"listen" ini-name:"listen" description:"The ip:port to listen for API requests."`
 	LogLevel        string        `long:"loglevel" ini-name:"loglevel" description:"Logging level." choice:"trace" choice:"debug" choice:"info" choice:"warn" choice:"error" choice:"critical"`
 	MaxLogSize      int64         `long:"maxlogsize" ini-name:"maxlogsize" description:"File size threshold for log file rotation (MB)."`
 	LogsToKeep      int           `long:"logstokeep" ini-name:"logstokeep" description:"The number of rotated log files to keep."`
-	NetworkName     string        `long:"network" ini-name:"network" description:"Decred network to use." choice:"testnet" choice:"mainnet" choice:"simnet"`
+	NetworkName     string        `long:"network" ini-name:"network" description:"Monetarium network to use." choice:"testnet" choice:"mainnet" choice:"simnet"`
 	VSPFee          float64       `long:"vspfee" ini-name:"vspfee" description:"Fee percentage charged for VSP use. eg. 2.0 (2%), 0.5 (0.5%)."`
-	DcrdHost        string        `long:"dcrdhost" ini-name:"dcrdhost" description:"The ip:port to establish a JSON-RPC connection with dcrd. Should be the same host where vspd is running."`
-	DcrdUser        string        `long:"dcrduser" ini-name:"dcrduser" description:"Username for dcrd RPC connections."`
-	DcrdPass        string        `long:"dcrdpass" ini-name:"dcrdpass" description:"Password for dcrd RPC connections."`
-	DcrdCert        string        `long:"dcrdcert" ini-name:"dcrdcert" description:"The dcrd RPC certificate file."`
-	WalletHosts     string        `long:"wallethost" ini-name:"wallethost" description:"Comma separated list of ip:port to establish JSON-RPC connections with voting dcrwallet."`
-	WalletUsers     string        `long:"walletuser" ini-name:"walletuser" description:"Comma separated list of username for dcrwallet RPC connections."`
-	WalletPasswords string        `long:"walletpass" ini-name:"walletpass" description:"Comma separated list of password for dcrwallet RPC connections."`
-	WalletCerts     string        `long:"walletcert" ini-name:"walletcert" description:"Comma separated list of dcrwallet RPC certificate files."`
+	MondHost        string        `long:"mondhost" ini-name:"mondhost" description:"The ip:port to establish a JSON-RPC connection with monetarium-node. Should be the same host where vspm is running."`
+	MondUser        string        `long:"monduser" ini-name:"monduser" description:"Username for mond RPC connections."`
+	MondPass        string        `long:"mondpass" ini-name:"mondpass" description:"Password for mond RPC connections."`
+	MondCert        string        `long:"mondcert" ini-name:"mondcert" description:"The mond RPC certificate file."`
+	WalletHosts     string        `long:"wallethost" ini-name:"wallethost" description:"Comma separated list of ip:port to establish JSON-RPC connections with voting monetarium-wallet instances."`
+	WalletUsers     string        `long:"walletuser" ini-name:"walletuser" description:"Comma separated list of usernames for monetarium-wallet RPC connections."`
+	WalletPasswords string        `long:"walletpass" ini-name:"walletpass" description:"Comma separated list of passwords for monetarium-wallet RPC connections."`
+	WalletCerts     string        `long:"walletcert" ini-name:"walletcert" description:"Comma separated list of monetarium-wallet RPC certificate files."`
 	WebServerDebug  bool          `long:"webserverdebug" ini-name:"webserverdebug" description:"Enable web server debug mode (verbose logging to terminal and live-reloading templates)."`
 	SupportEmail    string        `long:"supportemail" ini-name:"supportemail" description:"Support contact shown in the page footer. An email address is linked as mailto:, a URL (e.g. a Telegram group) is linked as-is."`
 	BackupInterval  time.Duration `long:"backupinterval" ini-name:"backupinterval" description:"Time period between automatic database backups. Valid time units are {s,m,h}. Minimum 30 seconds."`
@@ -53,17 +53,17 @@ type Config struct {
 
 	// The following flags should be set on CLI only, not via config file.
 	ShowVersion bool   `long:"version" no-ini:"true" description:"Display version information and exit."`
-	FeeXPub     string `long:"feexpub" no-ini:"true" description:"DEPRECATED: This behavior has been moved into vspadmin and will be removed from vspd in a future version of the software."`
+	FeeXPub     string `long:"feexpub" no-ini:"true" description:"DEPRECATED: This behavior has been moved into vspadmin and will be removed from vspm in a future version of the software."`
 	HomeDir     string `long:"homedir" no-ini:"true" description:"Path to application home directory. Used for storing VSP database and logs."`
 	ConfigFile  string `long:"configfile" no-ini:"true" description:"DEPRECATED: This behavior is no longer available and this option will be removed in a future version of the software."`
 
 	// The following fields are derived from the above fields by LoadConfig().
 	network       *config.Network
-	dcrdDetails   *DcrdDetails
+	mondDetails   *MondDetails
 	walletDetails *WalletDetails
 }
 
-type DcrdDetails struct {
+type MondDetails struct {
 	User     string
 	Password string
 	Host     string
@@ -89,8 +89,8 @@ func (cfg *Config) DatabaseFile() string {
 	return filepath.Join(cfg.HomeDir, "data", cfg.network.Name, dbFilename)
 }
 
-func (cfg *Config) DcrdDetails() *DcrdDetails {
-	return cfg.dcrdDetails
+func (cfg *Config) MondDetails() *MondDetails {
+	return cfg.mondDetails
 }
 
 func (cfg *Config) WalletDetails() *WalletDetails {
@@ -104,8 +104,8 @@ var DefaultConfig = Config{
 	LogsToKeep:     20,
 	NetworkName:    "testnet",
 	VSPFee:         1.0,
-	HomeDir:        dcrutil.AppDataDir("vspd", false),
-	DcrdHost:       "127.0.0.1",
+	HomeDir:        dcrutil.AppDataDir("vspm", false),
+	MondHost:       "127.0.0.1",
 	WalletHosts:    "127.0.0.1",
 	WebServerDebug: false,
 	BackupInterval: time.Minute * 3,
@@ -194,7 +194,7 @@ func normalizeAddress(addr, defaultPort string) string {
 //  3. Load configuration file overwriting defaults with any specified options
 //  4. Parse CLI options and overwrite/add any specified options
 //
-// The above results in vspd functioning properly without any config settings
+// The above results in vspm functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
 func LoadConfig() (*Config, error) {
@@ -301,50 +301,50 @@ func LoadConfig() (*Config, error) {
 		return nil, errors.New("the adminpass option is not set")
 	}
 
-	// Ensure the dcrd RPC username is set.
-	if cfg.DcrdUser == "" {
-		return nil, errors.New("the dcrduser option is not set")
+	// Ensure the mond RPC username is set.
+	if cfg.MondUser == "" {
+		return nil, errors.New("the monduser option is not set")
 	}
 
-	// Ensure the dcrd RPC password is set.
-	if cfg.DcrdPass == "" {
-		return nil, errors.New("the dcrdpass option is not set")
+	// Ensure the mond RPC password is set.
+	if cfg.MondPass == "" {
+		return nil, errors.New("the mondpass option is not set")
 	}
 
-	// Ensure the dcrd RPC cert path is set.
-	if cfg.DcrdCert == "" {
-		return nil, errors.New("the dcrdcert option is not set")
+	// Ensure the mond RPC cert path is set.
+	if cfg.MondCert == "" {
+		return nil, errors.New("the mondcert option is not set")
 	}
 
-	// Load dcrd RPC certificate.
-	cfg.DcrdCert = cleanAndExpandPath(cfg.DcrdCert)
-	dcrdCert, err := os.ReadFile(cfg.DcrdCert)
+	// Load mond RPC certificate.
+	cfg.MondCert = cleanAndExpandPath(cfg.MondCert)
+	mondCert, err := os.ReadFile(cfg.MondCert)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read dcrd cert file: %w", err)
+		return nil, fmt.Errorf("failed to read mond cert file: %w", err)
 	}
 
 	// Add default port for the active network if there is no port specified.
-	cfg.DcrdHost = normalizeAddress(cfg.DcrdHost, cfg.network.DcrdRPCServerPort)
+	cfg.MondHost = normalizeAddress(cfg.MondHost, cfg.network.MondRPCServerPort)
 
-	// All dcrd connection details are validated and preprocessed.
-	cfg.dcrdDetails = &DcrdDetails{
-		User:     cfg.DcrdUser,
-		Password: cfg.DcrdPass,
-		Host:     cfg.DcrdHost,
-		Cert:     dcrdCert,
+	// All mond connection details are validated and preprocessed.
+	cfg.mondDetails = &MondDetails{
+		User:     cfg.MondUser,
+		Password: cfg.MondPass,
+		Host:     cfg.MondHost,
+		Cert:     mondCert,
 	}
 
-	// Ensure the dcrwallet RPC username is set.
+	// Ensure the monwallet RPC username is set.
 	if cfg.WalletUsers == "" {
 		return nil, errors.New("the walletuser option is not set")
 	}
 
-	// Ensure the dcrwallet RPC password is set.
+	// Ensure the monwallet RPC password is set.
 	if cfg.WalletPasswords == "" {
 		return nil, errors.New("the walletpass option is not set")
 	}
 
-	// Ensure the dcrwallet RPC cert path is set.
+	// Ensure the monwallet RPC cert path is set.
 	if cfg.WalletCerts == "" {
 		return nil, errors.New("the walletcert option is not set")
 	}
@@ -377,13 +377,13 @@ func LoadConfig() (*Config, error) {
 			numHost, numHost, numCert)
 	}
 
-	// Load dcrwallet RPC certificate(s).
+	// Load monwallet RPC certificate(s).
 	walletCerts := make([][]byte, numCert)
 	for i := range numCert {
 		certs[i] = cleanAndExpandPath(certs[i])
 		walletCerts[i], err = os.ReadFile(certs[i])
 		if err != nil {
-			return nil, fmt.Errorf("failed to read dcrwallet cert file: %w", err)
+			return nil, fmt.Errorf("failed to read monwallet cert file: %w", err)
 		}
 	}
 
@@ -398,7 +398,7 @@ func LoadConfig() (*Config, error) {
 		walletHosts[i] = normalizeAddress(walletHosts[i], cfg.network.WalletRPCServerPort)
 	}
 
-	// All dcrwallet connection details are validated and preprocessed.
+	// All monwallet connection details are validated and preprocessed.
 	cfg.walletDetails = &WalletDetails{
 		Users:     walletUsers,
 		Passwords: walletPasswords,

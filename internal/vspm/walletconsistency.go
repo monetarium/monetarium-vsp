@@ -2,7 +2,7 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-package vspd
+package vspm
 
 import (
 	"context"
@@ -12,12 +12,12 @@ import (
 // checkWalletConsistency will retrieve all votable tickets from the database
 // and ensure they are all added to voting wallets with the correct vote
 // choices.
-func (v *Vspd) checkWalletConsistency(ctx context.Context) {
+func (v *Vspm) checkWalletConsistency(ctx context.Context) {
 	const funcName = "checkWalletConsistency"
 
 	v.log.Debug("Checking voting wallet consistency")
 
-	dcrdClient, _, err := v.dcrd.Client()
+	mondClient, _, err := v.mond.Client()
 	if err != nil {
 		v.log.Errorf("%s: %v", funcName, err)
 		return
@@ -59,7 +59,7 @@ func (v *Vspd) checkWalletConsistency(ctx context.Context) {
 		// Get all tickets the wallet is aware of.
 		walletTickets, err := walletClient.TicketInfo(oldestHeight)
 		if err != nil {
-			v.log.Errorf("%s: dcrwallet.TicketInfo failed (startHeight=%d, wallet=%s): %v",
+			v.log.Errorf("%s: monwallet.TicketInfo failed (startHeight=%d, wallet=%s): %v",
 				funcName, oldestHeight, walletClient.String(), err)
 			continue
 		}
@@ -78,15 +78,15 @@ func (v *Vspd) checkWalletConsistency(ctx context.Context) {
 			v.log.Infof("Adding missing ticket (wallet=%s, ticketHash=%s)",
 				walletClient.String(), dbTicket.Hash)
 
-			rawTicket, err := dcrdClient.GetRawTransaction(dbTicket.Hash)
+			rawTicket, err := mondClient.GetRawTransaction(dbTicket.Hash)
 			if err != nil {
-				v.log.Errorf("%s: dcrd.GetRawTransaction error: %v", funcName, err)
+				v.log.Errorf("%s: mond.GetRawTransaction error: %v", funcName, err)
 				continue
 			}
 
 			err = walletClient.AddTicketForVoting(dbTicket.VotingWIF, rawTicket.BlockHash, rawTicket.Hex)
 			if err != nil {
-				v.log.Errorf("%s: dcrwallet.AddTicketForVoting error (wallet=%s, ticketHash=%s): %v",
+				v.log.Errorf("%s: monwallet.AddTicketForVoting error (wallet=%s, ticketHash=%s): %v",
 					funcName, walletClient.String(), dbTicket.Hash, err)
 				continue
 			}
@@ -103,7 +103,7 @@ func (v *Vspd) checkWalletConsistency(ctx context.Context) {
 				walletClient.String(), minHeight)
 			err = walletClient.RescanFrom(minHeight)
 			if err != nil {
-				v.log.Errorf("%s: dcrwallet.RescanFrom failed (wallet=%s): %v",
+				v.log.Errorf("%s: monwallet.RescanFrom failed (wallet=%s): %v",
 					funcName, walletClient.String(), err)
 				continue
 			}
@@ -122,7 +122,7 @@ func (v *Vspd) checkWalletConsistency(ctx context.Context) {
 		// Get all tickets the wallet is aware of.
 		walletTickets, err := walletClient.TicketInfo(oldestHeight)
 		if err != nil {
-			v.log.Errorf("%s: dcrwallet.TicketInfo failed (startHeight=%d, wallet=%s): %v",
+			v.log.Errorf("%s: monwallet.TicketInfo failed (startHeight=%d, wallet=%s): %v",
 				funcName, oldestHeight, walletClient.String(), err)
 			continue
 		}
@@ -173,7 +173,7 @@ func (v *Vspd) checkWalletConsistency(ctx context.Context) {
 								funcName, dbTicket.Hash, err)
 						}
 					} else {
-						v.log.Errorf("%s: dcrwallet.SetVoteChoice error (wallet=%s, ticketHash=%s): %v",
+						v.log.Errorf("%s: monwallet.SetVoteChoice error (wallet=%s, ticketHash=%s): %v",
 							funcName, walletClient.String(), dbTicket.Hash, err)
 					}
 				}

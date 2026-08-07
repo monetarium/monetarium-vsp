@@ -2,7 +2,7 @@
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-package vspd
+package vspm
 
 import (
 	"context"
@@ -14,13 +14,13 @@ import (
 	"github.com/monetarium/monetarium-vsp/rpc"
 )
 
-// update uses the latest available information from dcrd to update all of the
-// data in the vspd database. When appropriate it will also broadcast pending
+// update uses the latest available information from mond to update all of the
+// data in the vspm database. When appropriate it will also broadcast pending
 // fee transactions and add tickets to voting wallets.
-func (v *Vspd) update(ctx context.Context) {
+func (v *Vspm) update(ctx context.Context) {
 	const funcName = "update"
 
-	dcrdClient, _, err := v.dcrd.Client()
+	mondClient, _, err := v.mond.Client()
 	if err != nil {
 		v.log.Errorf("%s: %v", funcName, err)
 		return
@@ -28,32 +28,32 @@ func (v *Vspd) update(ctx context.Context) {
 
 	// Step 1/4: Update the database with any tickets which now have 6+
 	// confirmations.
-	v.updateUnconfirmed(ctx, dcrdClient)
+	v.updateUnconfirmed(ctx, mondClient)
 	if ctx.Err() != nil {
 		return
 	}
 
 	// Step 2/4: Broadcast fee tx for tickets which are confirmed.
-	v.broadcastFees(ctx, dcrdClient)
+	v.broadcastFees(ctx, mondClient)
 	if ctx.Err() != nil {
 		return
 	}
 
 	// Step 3/4: Add tickets with confirmed fees to voting wallets.
-	v.addToWallets(ctx, dcrdClient)
+	v.addToWallets(ctx, mondClient)
 	if ctx.Err() != nil {
 		return
 	}
 
 	// Step 4/4: Set ticket outcome in database if any tickets are
 	// voted/revoked.
-	v.setOutcomes(ctx, dcrdClient)
+	v.setOutcomes(ctx, mondClient)
 	if ctx.Err() != nil {
 		return
 	}
 }
 
-func (v *Vspd) updateUnconfirmed(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
+func (v *Vspm) updateUnconfirmed(ctx context.Context, mondClient *rpc.MondRPC) {
 	const funcName = "updateUnconfirmed"
 
 	unconfirmed, err := v.db.GetUnconfirmedTickets()
@@ -68,7 +68,7 @@ func (v *Vspd) updateUnconfirmed(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 			return
 		}
 
-		tktTx, err := dcrdClient.GetRawTransaction(ticket.Hash)
+		tktTx, err := mondClient.GetRawTransaction(ticket.Hash)
 		if err != nil {
 			// ErrNoTxInfo here probably indicates a tx which was never mined
 			// and has been removed from the mempool. For example, a ticket
@@ -93,7 +93,7 @@ func (v *Vspd) updateUnconfirmed(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 						funcName, ticket.Hash, err)
 				}
 			} else {
-				v.log.Errorf("%s: dcrd.GetRawTransaction for ticket failed (ticketHash=%s): %v",
+				v.log.Errorf("%s: mond.GetRawTransaction for ticket failed (ticketHash=%s): %v",
 					funcName, ticket.Hash, err)
 			}
 
@@ -115,7 +115,7 @@ func (v *Vspd) updateUnconfirmed(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 	}
 }
 
-func (v *Vspd) broadcastFees(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
+func (v *Vspm) broadcastFees(ctx context.Context, mondClient *rpc.MondRPC) {
 	const funcName = "broadcastFees"
 
 	pending, err := v.db.GetPendingFees()
@@ -130,9 +130,9 @@ func (v *Vspd) broadcastFees(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 			return
 		}
 
-		err = dcrdClient.SendRawTransaction(ticket.FeeTxHex)
+		err = mondClient.SendRawTransaction(ticket.FeeTxHex)
 		if err != nil {
-			v.log.Errorf("%s: dcrd.SendRawTransaction for fee tx failed (ticketHash=%s): %v",
+			v.log.Errorf("%s: mond.SendRawTransaction for fee tx failed (ticketHash=%s): %v",
 				funcName, ticket.Hash, err)
 			ticket.FeeTxStatus = database.FeeError
 		} else {
@@ -149,7 +149,7 @@ func (v *Vspd) broadcastFees(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 	}
 }
 
-func (v *Vspd) addToWallets(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
+func (v *Vspm) addToWallets(ctx context.Context, mondClient *rpc.MondRPC) {
 	const funcName = "addToWallets"
 
 	unconfirmedFees, err := v.db.GetUnconfirmedFees()
@@ -174,9 +174,9 @@ func (v *Vspd) addToWallets(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 			return
 		}
 
-		feeTx, err := dcrdClient.GetRawTransaction(ticket.FeeTxHash)
+		feeTx, err := mondClient.GetRawTransaction(ticket.FeeTxHash)
 		if err != nil {
-			v.log.Errorf("%s: dcrd.GetRawTransaction for fee tx failed (feeTxHash=%s, ticketHash=%s): %v",
+			v.log.Errorf("%s: mond.GetRawTransaction for fee tx failed (feeTxHash=%s, ticketHash=%s): %v",
 				funcName, ticket.FeeTxHash, ticket.Hash, err)
 
 			ticket.FeeTxStatus = database.FeeError
@@ -204,9 +204,9 @@ func (v *Vspd) addToWallets(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 
 			// Add ticket to the voting wallet.
 
-			rawTicket, err := dcrdClient.GetRawTransaction(ticket.Hash)
+			rawTicket, err := mondClient.GetRawTransaction(ticket.Hash)
 			if err != nil {
-				v.log.Errorf("%s: dcrd.GetRawTransaction for ticket failed (ticketHash=%s): %v",
+				v.log.Errorf("%s: mond.GetRawTransaction for ticket failed (ticketHash=%s): %v",
 					funcName, ticket.Hash, err)
 				continue
 			}
@@ -216,7 +216,7 @@ func (v *Vspd) addToWallets(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 			for _, walletClient := range walletClients {
 				err = walletClient.AddTicketForVoting(ticket.VotingWIF, rawTicket.BlockHash, rawTicket.Hex)
 				if err != nil {
-					v.log.Errorf("%s: dcrwallet.AddTicketForVoting error (wallet=%s, ticketHash=%s): %v",
+					v.log.Errorf("%s: monwallet.AddTicketForVoting error (wallet=%s, ticketHash=%s): %v",
 						funcName, walletClient.String(), ticket.Hash, err)
 					continue
 				}
@@ -236,7 +236,7 @@ func (v *Vspd) addToWallets(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 									funcName, ticket.Hash, err)
 							}
 						} else {
-							v.log.Errorf("%s: dcrwallet.SetVoteChoice error (wallet=%s, ticketHash=%s): %v",
+							v.log.Errorf("%s: monwallet.SetVoteChoice error (wallet=%s, ticketHash=%s): %v",
 								funcName, walletClient.String(), ticket.Hash, err)
 						}
 					}
@@ -246,7 +246,7 @@ func (v *Vspd) addToWallets(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 				for tspend, policy := range ticket.TSpendPolicy {
 					err = walletClient.SetTSpendPolicy(tspend, policy, ticket.Hash)
 					if err != nil {
-						v.log.Errorf("%s: dcrwallet.SetTSpendPolicy failed (wallet=%s, ticketHash=%s): %v",
+						v.log.Errorf("%s: monwallet.SetTSpendPolicy failed (wallet=%s, ticketHash=%s): %v",
 							funcName, walletClient.String(), ticket.Hash, err)
 					}
 				}
@@ -255,7 +255,7 @@ func (v *Vspd) addToWallets(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 				for key, policy := range ticket.TreasuryPolicy {
 					err = walletClient.SetTreasuryPolicy(key, policy, ticket.Hash)
 					if err != nil {
-						v.log.Errorf("%s: dcrwallet.SetTreasuryPolicy failed (wallet=%s, ticketHash=%s): %v",
+						v.log.Errorf("%s: monwallet.SetTreasuryPolicy failed (wallet=%s, ticketHash=%s): %v",
 							funcName, walletClient.String(), ticket.Hash, err)
 					}
 				}
@@ -268,7 +268,7 @@ func (v *Vspd) addToWallets(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 	}
 }
 
-func (v *Vspd) setOutcomes(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
+func (v *Vspm) setOutcomes(ctx context.Context, mondClient *rpc.MondRPC) {
 	const funcName = "setOutcomes"
 
 	votableTickets, err := v.db.GetVotableTickets()
@@ -284,9 +284,9 @@ func (v *Vspd) setOutcomes(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 
 	var startHeight int64
 	if v.lastScannedBlock == 0 {
-		// Use the earliest height at which a votable ticket matured if vspd has
+		// Use the earliest height at which a votable ticket matured if vspm has
 		// not performed a scan for spent tickets since it started. This will
-		// catch any tickets which were spent whilst vspd was offline.
+		// catch any tickets which were spent whilst vspm was offline.
 		startHeight = votableTickets.EarliestPurchaseHeight() + int64(v.network.TicketMaturity)
 
 		// That maturity height is in the future when every votable ticket was
@@ -295,9 +295,9 @@ func (v *Vspd) setOutcomes(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 		// of those tickets can have been spent yet, so there is nothing to
 		// scan; findSpentTickets would reject the range and log an error on
 		// every block until the chain caught up.
-		bestBlock, err := dcrdClient.GetBlockCount()
+		bestBlock, err := mondClient.GetBlockCount()
 		if err != nil {
-			v.log.Errorf("%s: dcrd.GetBlockCount error: %v", funcName, err)
+			v.log.Errorf("%s: mond.GetBlockCount error: %v", funcName, err)
 			return
 		}
 		if startHeight > bestBlock {
@@ -307,7 +307,7 @@ func (v *Vspd) setOutcomes(ctx context.Context, dcrdClient *rpc.DcrdRPC) {
 		startHeight = v.lastScannedBlock
 	}
 
-	spent, endHeight, err := v.findSpentTickets(ctx, dcrdClient, votableTickets, startHeight)
+	spent, endHeight, err := v.findSpentTickets(ctx, mondClient, votableTickets, startHeight)
 	if err != nil {
 		// Don't log error if shutdown was requested, just return.
 		if errors.Is(err, context.Canceled) {

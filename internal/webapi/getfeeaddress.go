@@ -43,8 +43,8 @@ func (w *WebAPI) getNewFeeAddress() (string, uint32, error) {
 
 // getCurrentFee returns the minimum fee amount a client should pay in order to
 // register a ticket with the VSP at the current block height.
-func (w *WebAPI) getCurrentFee(dcrdClient *rpc.DcrdRPC) (dcrutil.Amount, error) {
-	bestBlock, err := dcrdClient.GetBestBlockHeader()
+func (w *WebAPI) getCurrentFee(mondClient *rpc.MondRPC) (dcrutil.Amount, error) {
+	bestBlock, err := mondClient.GetBestBlockHeader()
 	if err != nil {
 		return 0, err
 	}
@@ -75,10 +75,10 @@ func (w *WebAPI) feeAddress(c *gin.Context) {
 	ticket := c.MustGet(ticketKey).(database.Ticket)
 	knownTicket := c.MustGet(knownTicketKey).(bool)
 	commitmentAddress := c.MustGet(commitmentAddressKey).(string)
-	dcrdClient := c.MustGet(dcrdKey).(*rpc.DcrdRPC)
-	dcrdErr := c.MustGet(dcrdErrorKey)
-	if dcrdErr != nil {
-		w.log.Errorf("%s: %v", funcName, dcrdErr.(error))
+	mondClient := c.MustGet(mondKey).(*rpc.MondRPC)
+	mondErr := c.MustGet(mondErrorKey)
+	if mondErr != nil {
+		w.log.Errorf("%s: %v", funcName, mondErr.(error))
 		w.sendError(types.ErrInternalError, c)
 		return
 	}
@@ -105,15 +105,15 @@ func (w *WebAPI) feeAddress(c *gin.Context) {
 	}
 
 	// Get ticket details.
-	rawTicket, err := dcrdClient.GetRawTransaction(ticketHash)
+	rawTicket, err := mondClient.GetRawTransaction(ticketHash)
 	if err != nil {
-		w.log.Errorf("%s: dcrd.GetRawTransaction for ticket failed (ticketHash=%s): %v", funcName, ticketHash, err)
+		w.log.Errorf("%s: mond.GetRawTransaction for ticket failed (ticketHash=%s): %v", funcName, ticketHash, err)
 		w.sendError(types.ErrInternalError, c)
 		return
 	}
 
 	// Ensure this ticket is eligible to vote at some point in the future.
-	canVote, err := canTicketVote(rawTicket, dcrdClient, w.cfg.Network)
+	canVote, err := canTicketVote(rawTicket, mondClient, w.cfg.Network)
 	if err != nil {
 		w.log.Errorf("%s: canTicketVote error (ticketHash=%s): %v", funcName, ticketHash, err)
 		w.sendError(types.ErrInternalError, c)
@@ -132,7 +132,7 @@ func (w *WebAPI) feeAddress(c *gin.Context) {
 		// If the expiry period has passed we need to issue a new fee.
 		now := time.Now()
 		if ticket.FeeExpired() {
-			newFee, err := w.getCurrentFee(dcrdClient)
+			newFee, err := w.getCurrentFee(mondClient)
 			if err != nil {
 				w.log.Errorf("%s: getCurrentFee error (ticketHash=%s): %v", funcName, ticket.Hash, err)
 				w.sendError(types.ErrInternalError, c)
@@ -165,7 +165,7 @@ func (w *WebAPI) feeAddress(c *gin.Context) {
 	// Beyond this point we are processing a new ticket which the VSP has not
 	// seen before.
 
-	fee, err := w.getCurrentFee(dcrdClient)
+	fee, err := w.getCurrentFee(mondClient)
 	if err != nil {
 		w.log.Errorf("%s: getCurrentFee error (ticketHash=%s): %v", funcName, ticketHash, err)
 		w.sendError(types.ErrInternalError, c)

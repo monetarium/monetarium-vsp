@@ -4,43 +4,43 @@
 # Use of this source code is governed by an ISC
 # license that can be found in the LICENSE file.
 #
-# Tmux script that sets up a testnet vspd deployment with multiple voting wallets.
+# Tmux script that sets up a testnet vspm deployment with multiple voting wallets.
 #
 # To use the script simply run `./harness.sh` from the repo root.
 #
-# By default, the harness script will use `/tmp/vspd-harness` as a working
+# By default, the harness script will use `/tmp/vspm-harness` as a working
 # directory. This can be changed using the `-r` flag, eg:
 #
 #   ./harness.sh -r /my/harness/path
 #
 # The harness script makes a few assumptions about the system it is running on:
 # - tmux is installed
-# - dcrd, dcrwallet and vspd are available on $PATH
+# - mond, monetarium-wallet and vspm are available on $PATH
 # - Decred testnet chain is already downloaded and sync'd
-# - dcrd transaction index is already built
+# - mond transaction index is already built
 # - The following files exist:
-#   - ${HOME}/.dcrd/rpc.cert
-#   - ${HOME}/.dcrd/rpc.key
-#   - ${HOME}/.dcrwallet/rpc.cert
-#   - ${HOME}/.dcrwallet/rpc.key
+#   - ${HOME}/.mond/rpc.cert
+#   - ${HOME}/.mond/rpc.key
+#   - ${HOME}/.monetarium-wallet/rpc.cert
+#   - ${HOME}/.monetarium-wallet/rpc.key
 
 set -e
 
-TMUX_SESSION="vspd-harness"
+TMUX_SESSION="vspm-harness"
 RPC_USER="user"
 RPC_PASS="pass"
 NUMBER_OF_WALLETS=3
 
-DCRD_RPC_CERT="${HOME}/.dcrd/rpc.cert"
-DCRD_RPC_KEY="${HOME}/.dcrd/rpc.key"
+DCRD_RPC_CERT="${HOME}/.mond/rpc.cert"
+DCRD_RPC_KEY="${HOME}/.mond/rpc.key"
 
 WALLET_PASS="12345"
-WALLET_RPC_CERT="${HOME}/.dcrwallet/rpc.cert"
-WALLET_RPC_KEY="${HOME}/.dcrwallet/rpc.key"
+WALLET_RPC_CERT="${HOME}/.monetarium-wallet/rpc.cert"
+WALLET_RPC_KEY="${HOME}/.monetarium-wallet/rpc.key"
 
 VSPD_FEE_XPUB="tpubVppjaMjp8GEWzpMGHdXNhkjqof8baKGkUzneNEiocnnjnjY9hQPe6mxzZQyzyKYS3u5yxLp8KrJvibqDzc75RGqzkv2JMPYDXmCRR1a39jg"
 
-HARNESS_ROOT=/tmp/vspd-harness
+HARNESS_ROOT=/tmp/vspm-harness
 while getopts r: flag
 do
     case "${flag}" in
@@ -63,37 +63,37 @@ fi
 tmux new-session -d -s $TMUX_SESSION
 
 #################################################
-# Setup dcrd.
+# Setup mond.
 #################################################
 
-tmux rename-window -t $TMUX_SESSION 'dcrd'
+tmux rename-window -t $TMUX_SESSION 'mond'
 
-echo "Writing config for dcrd"
-mkdir -p "${HARNESS_ROOT}/dcrd"
-cat > "${HARNESS_ROOT}/dcrd/dcrd.conf" <<EOF
+echo "Writing config for mond"
+mkdir -p "${HARNESS_ROOT}/mond"
+cat > "${HARNESS_ROOT}/mond/mond.conf" <<EOF
 rpcuser=${RPC_USER}
 rpcpass=${RPC_PASS}
 rpccert=${DCRD_RPC_CERT}
 rpckey=${DCRD_RPC_KEY}
-logdir=${HARNESS_ROOT}/dcrd/log
+logdir=${HARNESS_ROOT}/mond/log
 testnet=true
 debuglevel=info
 txindex=true
 EOF
 
-echo "Starting dcrd"
-tmux send-keys "dcrd -C ${HARNESS_ROOT}/dcrd/dcrd.conf" C-m 
+echo "Starting mond"
+tmux send-keys "mond -C ${HARNESS_ROOT}/mond/mond.conf" C-m 
 
-sleep 1 # Give dcrd time to start
+sleep 1 # Give mond time to start
 
 #################################################
-# Setup multiple dcrwallets.
+# Setup multiple monetarium-wallets.
 #################################################
 
 for ((i = 1; i <= $NUMBER_OF_WALLETS; i++)); do
     WALLET_RPC_LISTEN="127.0.0.1:2011${i}"
 
-    # Concatenate all wallet details for vspd config file.
+    # Concatenate all wallet details for vspm config file.
     if [ $i == 1 ]; then
         ALL_WALLET_HOST="${WALLET_RPC_LISTEN}"
         ALL_WALLET_USER="${RPC_USER}"
@@ -108,15 +108,15 @@ for ((i = 1; i <= $NUMBER_OF_WALLETS; i++)); do
 
 
 echo ""
-echo "Writing config for dcrwallet-${i}"
-mkdir -p "${HARNESS_ROOT}/dcrwallet-${i}"
-cat > "${HARNESS_ROOT}/dcrwallet-${i}/dcrwallet.conf" <<EOF
+echo "Writing config for monetarium-wallet-${i}"
+mkdir -p "${HARNESS_ROOT}/monetarium-wallet-${i}"
+cat > "${HARNESS_ROOT}/monetarium-wallet-${i}/monetarium-wallet.conf" <<EOF
 username=${RPC_USER}
 password=${RPC_PASS}
 rpccert=${WALLET_RPC_CERT}
 rpckey=${WALLET_RPC_KEY}
-logdir=${HARNESS_ROOT}/dcrwallet-${i}/log
-appdata=${HARNESS_ROOT}/dcrwallet-${i}
+logdir=${HARNESS_ROOT}/monetarium-wallet-${i}/log
+appdata=${HARNESS_ROOT}/monetarium-wallet-${i}
 pass=${WALLET_PASS}
 grpclisten=127.0.0.1:2010${i}
 rpclisten=${WALLET_RPC_LISTEN}
@@ -126,10 +126,10 @@ testnet=true
 debuglevel=info
 EOF
 
-echo "Starting dcrwallet-${i}"
-tmux new-window -t $TMUX_SESSION -n "dcrwallet-${i}"
+echo "Starting monetarium-wallet-${i}"
+tmux new-window -t $TMUX_SESSION -n "monetarium-wallet-${i}"
 # Create wallet.
-tmux send-keys "dcrwallet -C ${HARNESS_ROOT}/dcrwallet-${i}/dcrwallet.conf --create <<EOF
+tmux send-keys "monetarium-wallet -C ${HARNESS_ROOT}/monetarium-wallet-${i}/monetarium-wallet.conf --create <<EOF
 y
 n
 n
@@ -137,21 +137,21 @@ ok
 EOF" C-m
 sleep 1
 # Start wallet.
-tmux send-keys "dcrwallet -C ${HARNESS_ROOT}/dcrwallet-${i}/dcrwallet.conf " C-m
+tmux send-keys "monetarium-wallet -C ${HARNESS_ROOT}/monetarium-wallet-${i}/monetarium-wallet.conf " C-m
 
 done
 
 #################################################
-# Setup vspd.
+# Setup vspm.
 #################################################
 
 echo ""
-echo "Writing config for vspd"
-mkdir -p "${HARNESS_ROOT}/vspd"
-cat > "${HARNESS_ROOT}/vspd/vspd.conf" <<EOF
-dcrduser = ${RPC_USER}
-dcrdpass = ${RPC_PASS}
-dcrdcert = ${DCRD_RPC_CERT}
+echo "Writing config for vspm"
+mkdir -p "${HARNESS_ROOT}/vspm"
+cat > "${HARNESS_ROOT}/vspm/vspm.conf" <<EOF
+monduser = ${RPC_USER}
+mondpass = ${RPC_PASS}
+mondcert = ${DCRD_RPC_CERT}
 wallethost = ${ALL_WALLET_HOST}
 walletuser = ${ALL_WALLET_USER}
 walletpass = ${ALL_WALLET_PASS}
@@ -167,13 +167,13 @@ adminpass=12345
 designation = harness
 EOF
 
-tmux new-window -t $TMUX_SESSION -n "vspd"
+tmux new-window -t $TMUX_SESSION -n "vspm"
 
-echo "Creating vspd database"
-tmux send-keys "go run ./cmd/vspadmin --homedir=${HARNESS_ROOT}/vspd --network=testnet createdatabase ${VSPD_FEE_XPUB}" C-m 
-sleep 3 # wait for database creation and ensure dcrwallet rpc listeners are started
-echo "Starting vspd"
-tmux send-keys "vspd --homedir=${HARNESS_ROOT}/vspd" C-m 
+echo "Creating vspm database"
+tmux send-keys "go run ./cmd/vspadmin --homedir=${HARNESS_ROOT}/vspm --network=testnet createdatabase ${VSPD_FEE_XPUB}" C-m 
+sleep 3 # wait for database creation and ensure monetarium-wallet rpc listeners are started
+echo "Starting vspm"
+tmux send-keys "vspm --homedir=${HARNESS_ROOT}/vspm" C-m 
 
 #################################################
 # All done - attach to tmux session.

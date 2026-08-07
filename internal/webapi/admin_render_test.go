@@ -38,7 +38,7 @@ func TestAdminTemplatesNesting(t *testing.T) {
 		"WebApiCache":   cacheData{},
 		"WebApiCfg":     Config{Network: &config.TestNet3},
 		"WalletStatus":  map[string]walletStatus{"127.0.0.1:19510": {}},
-		"DcrdStatus":    dcrdStatus{},
+		"MondStatus":    mondStatus{},
 		"MissedTickets": database.TicketList{{}},
 		"CurrentXPub":   &database.FeeXPub{},
 		"OldXPubs":      map[uint32]database.FeeXPub{1: {}},

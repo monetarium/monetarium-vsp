@@ -24,7 +24,7 @@ func (w *WebAPI) vspInfo(c *gin.Context) {
 		Network:             w.cfg.Network.Name,
 		VspClosed:           w.cfg.VspClosed,
 		VspClosedMsg:        w.cfg.VspClosedMsg,
-		VspdVersion:         version.String(),
+		VspmVersion:         version.String(),
 		Voting:              cachedStats.Voting,
 		Voted:               cachedStats.Voted,
 		TotalVotingWallets:  cachedStats.TotalVotingWallets,

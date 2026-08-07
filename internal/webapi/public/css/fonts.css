@@ -1,5 +1,5 @@
 @font-face {
-    font-family: "vspd-code";
+    font-family: "vspm-code";
     src:
         url("/public/css/fonts/SourceCodePro-Regular/SourceCodePro-Regular.ttf.woff2") format("woff2"),
         url("/public/css/fonts/SourceCodePro-Regular/SourceCodePro-Regular.ttf.woff")  format("woff"),
@@ -9,7 +9,7 @@
 }
 
 @font-face {
-    font-family: "vspd";
+    font-family: "vspm";
     src:
         url("/public/css/fonts/SourceSansPro-Regular/SourceSansPro-Regular.ttf.woff2") format("woff2"),
         url("/public/css/fonts/SourceSansPro-Regular/SourceSansPro-Regular.ttf.woff") format("woff"),
@@ -19,7 +19,7 @@
 }
 
 @font-face {
-    font-family: "vspd";
+    font-family: "vspm";
     src:
         url("/public/css/fonts/SourceSansPro-Semibold/SourceSansPro-Semibold.ttf.woff2") format("woff2"),
         url("/public/css/fonts/SourceSansPro-Semibold/SourceSansPro-Semibold.ttf.woff") format("woff"),
@@ -30,7 +30,7 @@
 }
 
 @font-face {
-    font-family: "vspd";
+    font-family: "vspm";
     src:
         url("/public/css/fonts/SourceSansPro-It/SourceSansPro-It.ttf.woff2") format("woff2"),
         url("/public/css/fonts/SourceSansPro-It/SourceSansPro-It.ttf.woff") format("woff"),
@@ -41,7 +41,7 @@
 }
 
 @font-face {
-    font-family: "vspd";
+    font-family: "vspm";
     src:
         url("/public/css/fonts/SourceSansPro-SemiboldIt/SourceSansPro-SemiboldIt.ttf.woff2") format("woff2"),
         url("/public/css/fonts/SourceSansPro-SemiboldIt/SourceSansPro-SemiboldIt.ttf.woff") format("woff"),
@@ -53,9 +53,9 @@
 }
 
 html, body {
-    font-family: "vspd", "Verdana", sans-serif;
+    font-family: "vspm", "Verdana", sans-serif;
 }
 
 pre, code, .code {
-    font-family: "vspd-code", "Courier New", monospace;
+    font-family: "vspm-code", "Courier New", monospace;
 }

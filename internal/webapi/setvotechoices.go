@@ -154,7 +154,7 @@ func (w *WebAPI) setVoteChoices(c *gin.Context) {
 			for agenda, choice := range ticket.VoteChoices {
 				err = walletClient.SetVoteChoice(agenda, choice, ticket.Hash)
 				if err != nil {
-					w.log.Errorf("%s: dcrwallet.SetVoteChoice failed (wallet=%s, ticketHash=%s): %v",
+					w.log.Errorf("%s: monwallet.SetVoteChoice failed (wallet=%s, ticketHash=%s): %v",
 						funcName, walletClient.String(), ticket.Hash, err)
 				}
 			}
@@ -163,7 +163,7 @@ func (w *WebAPI) setVoteChoices(c *gin.Context) {
 			for tspend, policy := range ticket.TSpendPolicy {
 				err = walletClient.SetTSpendPolicy(tspend, policy, ticket.Hash)
 				if err != nil {
-					w.log.Errorf("%s: dcrwallet.SetTSpendPolicy failed (wallet=%s, ticketHash=%s): %v",
+					w.log.Errorf("%s: monwallet.SetTSpendPolicy failed (wallet=%s, ticketHash=%s): %v",
 						funcName, walletClient.String(), ticket.Hash, err)
 				}
 			}
@@ -172,7 +172,7 @@ func (w *WebAPI) setVoteChoices(c *gin.Context) {
 			for key, policy := range ticket.TreasuryPolicy {
 				err = walletClient.SetTreasuryPolicy(key, policy, ticket.Hash)
 				if err != nil {
-					w.log.Errorf("%s: dcrwallet.SetTreasuryPolicy failed (wallet=%s, ticketHash=%s): %v",
+					w.log.Errorf("%s: monwallet.SetTreasuryPolicy failed (wallet=%s, ticketHash=%s): %v",
 						funcName, walletClient.String(), ticket.Hash, err)
 				}
 			}

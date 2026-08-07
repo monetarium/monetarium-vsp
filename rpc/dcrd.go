@@ -20,35 +20,35 @@ import (
 	"github.com/monetarium/monetarium-node/chaincfg/chainhash"
 	"github.com/monetarium/monetarium-node/gcs"
 	"github.com/monetarium/monetarium-node/gcs/blockcf2"
-	dcrdtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
+	mondtypes "github.com/monetarium/monetarium-node/rpc/jsonrpc/types"
 	"github.com/monetarium/monetarium-node/wire"
 )
 
 const (
-	// These numerical error codes are defined in dcrd/dcrjson. Copied here so
+	// These numerical error codes are defined in mond/dcrjson. Copied here so
 	// we dont need to import the whole package.
 	ErrRPCDuplicateTx = -40
 	ErrNoTxInfo       = -5
 )
 
-// ErrOrphan error string is defined in dcrd/internal/mempool. Copied here
+// ErrOrphan error string is defined in mond/internal/mempool. Copied here
 // because it is not exported.
 var ErrOrphan = regexp.MustCompile(`orphan transaction \w+ references output \w+:\d+ of unknown or fully-spent transaction`)
 
-// DcrdRPC provides methods for calling dcrd JSON-RPCs without exposing the details
+// MondRPC provides methods for calling mond JSON-RPCs without exposing the details
 // of JSON encoding.
-type DcrdRPC struct {
+type MondRPC struct {
 	Caller
 }
 
-type DcrdConnect struct {
+type MondConnect struct {
 	client *client
 	params *chaincfg.Params
 	log    slog.Logger
 }
 
-func SetupDcrd(user, pass, addr string, cert []byte, params *chaincfg.Params, log slog.Logger,
-	blockConnectedChan chan *wire.BlockHeader) DcrdConnect {
+func SetupMond(user, pass, addr string, cert []byte, params *chaincfg.Params, log slog.Logger,
+	blockConnectedChan chan *wire.BlockHeader) MondConnect {
 	client := setup(user, pass, addr, cert, log)
 
 	client.notifier = &blockConnectedHandler{
@@ -56,81 +56,81 @@ func SetupDcrd(user, pass, addr string, cert []byte, params *chaincfg.Params, lo
 		log:            log,
 	}
 
-	return DcrdConnect{
+	return MondConnect{
 		client: client,
 		params: params,
 		log:    log,
 	}
 }
 
-func (d *DcrdConnect) Close() {
+func (d *MondConnect) Close() {
 	d.client.Close()
-	d.log.Debug("dcrd client closed")
+	d.log.Debug("mond client closed")
 }
 
-// Client creates a new DcrdRPC client instance. Returns an error if dialing
-// dcrd fails or if dcrd is misconfigured.
-func (d *DcrdConnect) Client() (*DcrdRPC, string, error) {
+// Client creates a new MondRPC client instance. Returns an error if dialing
+// mond fails or if mond is misconfigured.
+func (d *MondConnect) Client() (*MondRPC, string, error) {
 	c, newConnection, err := d.client.dial(context.TODO())
 	if err != nil {
-		return nil, d.client.addr, fmt.Errorf("dcrd dial error: %w", err)
+		return nil, d.client.addr, fmt.Errorf("mond dial error: %w", err)
 	}
 
-	dcrdRPC := &DcrdRPC{c}
+	mondRPC := &MondRPC{c}
 
-	// If this is a reused connection, we don't need to validate the dcrd config
+	// If this is a reused connection, we don't need to validate the mond config
 	// again.
 	if !newConnection {
-		return dcrdRPC, d.client.addr, nil
+		return mondRPC, d.client.addr, nil
 	}
 
-	// Verify dcrd is at the required version.
-	err = dcrdRPC.checkVersion()
+	// Verify mond is at the required version.
+	err = mondRPC.checkVersion()
 	if err != nil {
 		d.client.Close()
-		return nil, d.client.addr, fmt.Errorf("dcrd version check failed: %w", err)
+		return nil, d.client.addr, fmt.Errorf("mond version check failed: %w", err)
 	}
 
-	// Verify dcrd is on the correct network.
-	netID, err := dcrdRPC.getCurrentNet()
+	// Verify mond is on the correct network.
+	netID, err := mondRPC.getCurrentNet()
 	if err != nil {
 		d.client.Close()
-		return nil, d.client.addr, fmt.Errorf("dcrd getcurrentnet check failed: %w", err)
+		return nil, d.client.addr, fmt.Errorf("mond getcurrentnet check failed: %w", err)
 	}
 	if netID != d.params.Net {
 		d.client.Close()
-		return nil, d.client.addr, fmt.Errorf("dcrd running on %s, expected %s", netID, d.params.Net)
+		return nil, d.client.addr, fmt.Errorf("mond running on %s, expected %s", netID, d.params.Net)
 	}
 
-	// Verify dcrd has tx index enabled (required for getrawtransaction).
-	info, err := dcrdRPC.getInfo()
+	// Verify mond has tx index enabled (required for getrawtransaction).
+	info, err := mondRPC.getInfo()
 	if err != nil {
 		d.client.Close()
-		return nil, d.client.addr, fmt.Errorf("dcrd getinfo check failed: %w", err)
+		return nil, d.client.addr, fmt.Errorf("mond getinfo check failed: %w", err)
 	}
 	if !info.TxIndex {
 		d.client.Close()
-		return nil, d.client.addr, errors.New("dcrd does not have transaction index enabled (--txindex)")
+		return nil, d.client.addr, errors.New("mond does not have transaction index enabled (--txindex)")
 	}
 
 	// Request blockconnected notifications.
 	if d.client.notifier != nil {
-		err = dcrdRPC.NotifyBlocks()
+		err = mondRPC.NotifyBlocks()
 		if err != nil {
 			return nil, d.client.addr, fmt.Errorf("notifyblocks failed: %w", err)
 		}
 	}
 
-	d.log.Debugf("Connected to dcrd")
+	d.log.Debugf("Connected to mond")
 
-	return &DcrdRPC{c}, d.client.addr, nil
+	return &MondRPC{c}, d.client.addr, nil
 }
 
-// checkVersion uses version RPC to retrieve the binary and API version of dcrd.
+// checkVersion uses version RPC to retrieve the binary and API version of mond.
 // An error is returned if there is not semver compatibility with the minimum
 // expected versions.
-func (c *DcrdRPC) checkVersion() error {
-	var verMap map[string]dcrdtypes.VersionResult
+func (c *MondRPC) checkVersion() error {
+	var verMap map[string]mondtypes.VersionResult
 	err := c.Call(context.TODO(), "version", &verMap)
 	if err != nil {
 		return err
@@ -144,7 +144,7 @@ func (c *DcrdRPC) checkVersion() error {
 
 // getCurrentNet uses getcurrentnet RPC to return the Decred network the wallet
 // is connected to.
-func (c *DcrdRPC) getCurrentNet() (wire.CurrencyNet, error) {
+func (c *MondRPC) getCurrentNet() (wire.CurrencyNet, error) {
 	var netID wire.CurrencyNet
 	err := c.Call(context.TODO(), "getcurrentnet", &netID)
 	if err != nil {
@@ -154,8 +154,8 @@ func (c *DcrdRPC) getCurrentNet() (wire.CurrencyNet, error) {
 }
 
 // getInfo uses getinfo RPC to return various daemon, network, and chain info.
-func (c *DcrdRPC) getInfo() (*dcrdtypes.InfoChainResult, error) {
-	var info dcrdtypes.InfoChainResult
+func (c *MondRPC) getInfo() (*mondtypes.InfoChainResult, error) {
+	var info mondtypes.InfoChainResult
 	err := c.Call(context.TODO(), "getinfo", &info)
 	if err != nil {
 		return nil, err
@@ -165,9 +165,9 @@ func (c *DcrdRPC) getInfo() (*dcrdtypes.InfoChainResult, error) {
 
 // GetRawTransaction uses getrawtransaction RPC to retrieve details about the
 // transaction with the provided hash.
-func (c *DcrdRPC) GetRawTransaction(txHash string) (*dcrdtypes.TxRawResult, error) {
+func (c *MondRPC) GetRawTransaction(txHash string) (*mondtypes.TxRawResult, error) {
 	verbose := 1
-	var resp dcrdtypes.TxRawResult
+	var resp mondtypes.TxRawResult
 	err := c.Call(context.TODO(), "getrawtransaction", &resp, txHash, verbose)
 	if err != nil {
 		return nil, err
@@ -176,8 +176,8 @@ func (c *DcrdRPC) GetRawTransaction(txHash string) (*dcrdtypes.TxRawResult, erro
 }
 
 // DecodeRawTransaction uses decoderawtransaction RPC to decode raw transaction bytes.
-func (c *DcrdRPC) DecodeRawTransaction(txHex string) (*dcrdtypes.TxRawDecodeResult, error) {
-	var resp dcrdtypes.TxRawDecodeResult
+func (c *MondRPC) DecodeRawTransaction(txHex string) (*mondtypes.TxRawDecodeResult, error) {
+	var resp mondtypes.TxRawDecodeResult
 	err := c.Call(context.TODO(), "decoderawtransaction", &resp, txHex)
 	if err != nil {
 		return nil, err
@@ -188,7 +188,7 @@ func (c *DcrdRPC) DecodeRawTransaction(txHex string) (*dcrdtypes.TxRawDecodeResu
 
 // SendRawTransaction uses sendrawtransaction RPC to broadcast a transaction to
 // the network. It ignores errors caused by duplicate transactions.
-func (c *DcrdRPC) SendRawTransaction(txHex string) error {
+func (c *MondRPC) SendRawTransaction(txHex string) error {
 	const allowHighFees = false
 	err := c.Call(context.TODO(), "sendrawtransaction", nil, txHex, allowHighFees)
 	if err != nil {
@@ -197,13 +197,13 @@ func (c *DcrdRPC) SendRawTransaction(txHex string) error {
 		// mempool or in a mined block.
 
 		// Error code -40 (ErrRPCDuplicateTx) is completely ignorable because it
-		// indicates that dcrd definitely already has this transaction.
+		// indicates that mond definitely already has this transaction.
 		var e *wsrpc.Error
 		if errors.As(err, &e) && e.Code == ErrRPCDuplicateTx {
 			return nil
 		}
 
-		// Errors about orphan/spent outputs indicate that dcrd *might* already
+		// Errors about orphan/spent outputs indicate that mond *might* already
 		// have this transaction. Use getrawtransaction to confirm.
 		if ErrOrphan.MatchString(err.Error()) {
 			_, getErr := c.GetRawTransaction(txHex)
@@ -217,14 +217,14 @@ func (c *DcrdRPC) SendRawTransaction(txHex string) error {
 	return nil
 }
 
-// NotifyBlocks uses notifyblocks RPC to request new block notifications from dcrd.
-func (c *DcrdRPC) NotifyBlocks() error {
+// NotifyBlocks uses notifyblocks RPC to request new block notifications from mond.
+func (c *MondRPC) NotifyBlocks() error {
 	return c.Call(context.TODO(), "notifyblocks", nil)
 }
 
 // GetBestBlockHeader uses getbestblockhash RPC, followed by getblockheader RPC,
-// to retrieve the header of the best block known to the dcrd instance.
-func (c *DcrdRPC) GetBestBlockHeader() (*wire.BlockHeader, error) {
+// to retrieve the header of the best block known to the mond instance.
+func (c *MondRPC) GetBestBlockHeader() (*wire.BlockHeader, error) {
 	var bestBlockHash string
 	err := c.Call(context.TODO(), "getbestblockhash", &bestBlockHash)
 	if err != nil {
@@ -240,7 +240,7 @@ func (c *DcrdRPC) GetBestBlockHeader() (*wire.BlockHeader, error) {
 
 // GetBlockHeader uses getblockheader RPC with verbose=false to retrieve
 // the header of the requested block.
-func (c *DcrdRPC) GetBlockHeader(blockHash string) (*wire.BlockHeader, error) {
+func (c *MondRPC) GetBlockHeader(blockHash string) (*wire.BlockHeader, error) {
 	const verbose = false
 	var resp string
 	err := c.Call(context.TODO(), "getblockheader", &resp, blockHash, verbose)
@@ -265,8 +265,8 @@ func (c *DcrdRPC) GetBlockHeader(blockHash string) (*wire.BlockHeader, error) {
 }
 
 // ExistsLiveTicket uses existslivetickets RPC to check if the provided ticket
-// hash is a live ticket known to the dcrd instance.
-func (c *DcrdRPC) ExistsLiveTicket(ticketHash string) (bool, error) {
+// hash is a live ticket known to the mond instance.
+func (c *MondRPC) ExistsLiveTicket(ticketHash string) (bool, error) {
 	var exists string
 	err := c.Call(context.TODO(), "existslivetickets", &exists, []string{ticketHash})
 	if err != nil {
@@ -282,7 +282,7 @@ func (c *DcrdRPC) ExistsLiveTicket(ticketHash string) (bool, error) {
 	return bitset.Bytes(existsBytes).Get(0), nil
 }
 
-func (c *DcrdRPC) GetBlock(hash string) (*wire.MsgBlock, error) {
+func (c *MondRPC) GetBlock(hash string) (*wire.MsgBlock, error) {
 	var resp string
 	const verbose = false
 	const verboseTx = false
@@ -307,7 +307,7 @@ func (c *DcrdRPC) GetBlock(hash string) (*wire.MsgBlock, error) {
 	return &msgBlock, nil
 }
 
-func (c *DcrdRPC) GetBlockCount() (int64, error) {
+func (c *MondRPC) GetBlockCount() (int64, error) {
 	var count int64
 	err := c.Call(context.TODO(), "getblockcount", &count)
 	if err != nil {
@@ -316,7 +316,7 @@ func (c *DcrdRPC) GetBlockCount() (int64, error) {
 	return count, nil
 }
 
-func (c *DcrdRPC) GetBlockHash(height int64) (string, error) {
+func (c *MondRPC) GetBlockHash(height int64) (string, error) {
 	var resp string
 	err := c.Call(context.TODO(), "getblockhash", &resp, height)
 	if err != nil {
@@ -328,9 +328,9 @@ func (c *DcrdRPC) GetBlockHash(height int64) (string, error) {
 // GetCFilterV2 retrieves the GCS filter for the provided block header,
 // optionally verifies the inclusion proof, then returns the filter along with
 // its key.
-func (c *DcrdRPC) GetCFilterV2(header *wire.BlockHeader, verifyProof bool) ([gcs.KeySize]byte, *gcs.FilterV2, error) {
+func (c *MondRPC) GetCFilterV2(header *wire.BlockHeader, verifyProof bool) ([gcs.KeySize]byte, *gcs.FilterV2, error) {
 	var key [gcs.KeySize]byte
-	var resp dcrdtypes.GetCFilterV2Result
+	var resp mondtypes.GetCFilterV2Result
 	err := c.Call(context.TODO(), "getcfilterv2", &resp, header.BlockHash().String())
 	if err != nil {
 		return key, nil, fmt.Errorf("getcfilterv2 error: %w", err)

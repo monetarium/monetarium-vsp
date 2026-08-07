@@ -224,7 +224,7 @@ func (c *Client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 				status, http.StatusText(status))
 		}
 
-		// Try to unmarshal the response body to a known vspd error.
+		// Try to unmarshal the response body to a known vspm error.
 		d := json.NewDecoder(bytes.NewReader(respBody))
 		d.DisallowUnknownFields()
 
@@ -235,7 +235,7 @@ func (c *Client) do(ctx context.Context, method, path string, addr stdaddr.Addre
 		}
 
 		// If the response body could not be unmarshalled it might not have come
-		// from vspd (eg. it could be from an nginx reverse proxy or some other
+		// from vspm (eg. it could be from an nginx reverse proxy or some other
 		// intermediary server). Return an error with the HTTP status and the
 		// full body so that it may be investigated.
 		return fmt.Errorf("http status %d (%s) with body %q",
